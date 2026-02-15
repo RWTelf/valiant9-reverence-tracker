@@ -9,203 +9,95 @@
   <title>Reverence Party Progress – Valiant 9</title>
 
   <style>
-    * {
-      -webkit-user-select: none;
-      -webkit-touch-callout: none;
-      user-select: none;
-      box-sizing: border-box;
-    }
+    * { -webkit-user-select:none; -webkit-touch-callout:none; user-select:none; box-sizing:border-box; }
 
     html, body {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      padding: 0;
+      width: 100%; height: 100%; margin: 0; padding: 0;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      overflow:hidden;
     }
 
     .container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
-      height: 100%;
-      padding: 20px;
-      gap: 20px;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      width:100%; height:100%; padding:20px; gap:20px;
     }
 
     h1 {
-      color: white;
-      font-size: 28px;
-      font-weight: 700;
-      margin: 0;
-      text-shadow: 0 2px 10px rgba(0,0,0,0.2);
-      text-align: center;
-      line-height: 1.15;
+      color:white; font-size:28px; font-weight:700; margin:0;
+      text-shadow:0 2px 10px rgba(0,0,0,0.2);
+      text-align:center; line-height:1.15;
     }
 
     .pizza-container {
-      position: relative;
-      width: 320px;
-      height: 320px;
+      position:relative; width:320px; height:320px;
       filter: drop-shadow(0 10px 25px rgba(0, 0, 0, 0.3));
     }
 
-    svg {
-      width: 100%;
-      height: 100%;
-      display: block;
-      touch-action: manipulation;
-    }
+    svg { width:100%; height:100%; display:block; touch-action:manipulation; }
 
-    /* Tap target overlay (separate from visuals to keep iPad Safari happy) */
     .slice-hit {
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-      pointer-events: all;
-      fill: rgba(0,0,0,0.001);  /* invisible but "painted" => tappable in Safari */
+      cursor:pointer; -webkit-tap-highlight-color:transparent;
+      pointer-events:all;
+      fill: rgba(0,0,0,0.001);
       stroke: rgba(0,0,0,0.001);
       stroke-width: 18;
       paint-order: stroke fill;
     }
 
     .counter {
-      color: white;
-      font-size: 18px;
-      font-weight: 600;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      color:white; font-size:18px; font-weight:600;
+      text-shadow:0 2px 8px rgba(0,0,0,0.2);
     }
 
-    .button-group {
-      display: flex;
-      gap: 12px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
+    .button-group { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
 
     button {
-      padding: 14px 28px;
-      font-size: 16px;
-      font-weight: 700;
-      border: none;
-      border-radius: 12px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      -webkit-appearance: none;
-      appearance: none;
-      min-width: 120px;
+      padding:14px 28px; font-size:16px; font-weight:700;
+      border:none; border-radius:12px; cursor:pointer;
+      transition:all 0.2s ease;
+      -webkit-appearance:none; appearance:none;
+      min-width:120px;
     }
 
-    #btnReset {
-      background-color: #ff6b6b;
-      color: white;
-      box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
-    }
-    #btnReset:active {
-      transform: scale(0.97);
-      box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
-    }
+    #btnReset { background:#ff6b6b; color:white; box-shadow:0 4px 15px rgba(255,107,107,0.3); }
+    #btnReset:active { transform:scale(0.97); box-shadow:0 2px 8px rgba(255,107,107,0.3); }
 
-    #btnFill {
-      background-color: #51cf66;
-      color: white;
-      box-shadow: 0 4px 15px rgba(81, 207, 102, 0.3);
-    }
-    #btnFill:active {
-      transform: scale(0.97);
-      box-shadow: 0 2px 8px rgba(81, 207, 102, 0.3);
-    }
+    #btnFill { background:#51cf66; color:white; box-shadow:0 4px 15px rgba(81,207,102,0.3); }
+    #btnFill:active { transform:scale(0.97); box-shadow:0 2px 8px rgba(81,207,102,0.3); }
 
-    /* Modal */
     .modal-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.7);
-      z-index: 1000;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
+      display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7);
+      z-index:1000; align-items:center; justify-content:center; padding:20px;
       animation: fadeIn 0.3s ease;
     }
-    .modal-overlay.show { display: flex; }
-
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to   { opacity: 1; }
-    }
+    .modal-overlay.show { display:flex; }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
 
     .modal-content {
-      background: white;
-      border-radius: 20px;
-      padding: 40px 30px;
-      text-align: center;
-      max-width: 420px;
-      width: min(420px, 92vw);
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      background:white; border-radius:20px; padding:40px 30px;
+      text-align:center; max-width:420px; width:min(420px, 92vw);
+      box-shadow:0 20px 60px rgba(0,0,0,0.3);
       animation: slideUp 0.4s ease;
-      position: relative;
-      z-index: 1001;
+      position:relative; z-index:1001;
     }
+    @keyframes slideUp { from{transform:translateY(50px);opacity:0} to{transform:translateY(0);opacity:1} }
 
-    @keyframes slideUp {
-      from { transform: translateY(50px); opacity: 0; }
-      to   { transform: translateY(0); opacity: 1; }
-    }
+    .modal-content h2 { font-size:34px; margin:0 0 10px; color:#333; line-height:1.1; }
+    .modal-content .celebration-text { font-size:22px; margin:18px 0; color:#555; }
+    .modal-content .button-group { margin-top:26px; }
+    .modal-content button { min-width:150px; }
 
-    .modal-content h2 {
-      font-size: 34px;
-      margin: 0 0 10px 0;
-      color: #333;
-      line-height: 1.1;
-    }
-    .modal-content .celebration-text {
-      font-size: 22px;
-      margin: 18px 0;
-      color: #555;
-    }
-    .modal-content .button-group { margin-top: 26px; }
-    .modal-content button { min-width: 150px; }
+    #btnClose { background:#4c6ef5; color:white; box-shadow:0 4px 15px rgba(76,110,245,0.3); }
+    #btnClose:active { transform:scale(0.97); box-shadow:0 2px 8px rgba(76,110,245,0.3); }
 
-    #btnClose {
-      background-color: #4c6ef5;
-      color: white;
-      box-shadow: 0 4px 15px rgba(76, 110, 245, 0.3);
-    }
-    #btnClose:active {
-      transform: scale(0.97);
-      box-shadow: 0 2px 8px rgba(76, 110, 245, 0.3);
-    }
+    #btnResetModal { background:#ff6b6b; color:white; box-shadow:0 4px 15px rgba(255,107,107,0.3); }
+    #btnResetModal:active { transform:scale(0.97); box-shadow:0 2px 8px rgba(255,107,107,0.3); }
 
-    #btnResetModal {
-      background-color: #ff6b6b;
-      color: white;
-      box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
-    }
-    #btnResetModal:active {
-      transform: scale(0.97);
-      box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
-    }
-
-    /* Confetti */
-    .confetti {
-      position: fixed;
-      pointer-events: none;
-      z-index: 1002;
-    }
-
+    .confetti { position:fixed; pointer-events:none; z-index:1002; }
     @keyframes confettiFall {
-      to {
-        transform: translateY(100vh) rotate(720deg);
-        opacity: 0;
-      }
+      to { transform: translateY(100vh) rotate(720deg); opacity:0; }
     }
   </style>
 </head>
@@ -217,7 +109,6 @@
     <div class="pizza-container">
       <svg id="pizzaSvg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pizza progress tracker">
         <defs>
-          <!-- Gradients -->
           <radialGradient id="cheeseGradient" cx="40%" cy="40%">
             <stop offset="0%" stop-color="#f7dc6f" />
             <stop offset="65%" stop-color="#f39c12" />
@@ -238,26 +129,23 @@
             <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#000" flood-opacity="0.18" />
           </filter>
 
-          <!-- Dynamic clipPaths injected here (use <g>, NOT nested <defs>) -->
+          <!-- Dynamic clipPaths injected here -->
           <g id="dynDefs"></g>
         </defs>
 
-        <!-- Plate -->
+        <!-- plate -->
         <circle cx="100" cy="100" r="98" fill="rgba(255,255,255,0.14)"></circle>
 
-        <!-- Crust + sauce base -->
+        <!-- crust + sauce base -->
         <g filter="url(#softShadow)">
           <circle cx="100" cy="100" r="95" fill="url(#crustGradient)"></circle>
           <circle cx="100" cy="100" r="84" fill="url(#sauceGradient)"></circle>
         </g>
 
-        <!-- Slices -->
         <g id="slicesLayer"></g>
-
-        <!-- Dividers -->
         <g id="dividersLayer"></g>
 
-        <!-- Center highlight -->
+        <!-- center highlight -->
         <circle cx="100" cy="100" r="10" fill="rgba(255,255,255,0.35)"></circle>
       </svg>
     </div>
@@ -270,7 +158,6 @@
     </div>
   </div>
 
-  <!-- Completion Modal -->
   <div class="modal-overlay" id="completionModal">
     <div class="modal-content">
       <h2>🎉 Party time,<br>Valiant 9!</h2>
@@ -287,20 +174,17 @@
     // Constants & State
     // ===========================
     const NUM_SLICES = 10;
-    const STORAGE_KEY = "pizzaSliceStates_v3";
+    const STORAGE_KEY = "pizzaSliceStates_v4";
 
     // SVG geometry
     const CX = 100, CY = 100;
-    const R_OUTER = 84;   // cheese edge
-    const R_INNER = 12;   // small center to avoid super pointy wedge
+    const R_OUTER = 84; // cheese edge
+    const R_INNER = 12; // hub to avoid sharp point
 
-    // Must match slice orientation in render()
-    const START_OFFSET = -Math.PI / 2;
+    const START_OFFSET = -Math.PI / 2;          // slice 0 at top
     const STEP = (2 * Math.PI) / NUM_SLICES;
 
-    // ===========================
-    // DOM Elements
-    // ===========================
+    // DOM
     const filledCountSpan = document.getElementById("filledCount");
     const btnReset = document.getElementById("btnReset");
     const btnFill = document.getElementById("btnFill");
@@ -312,9 +196,6 @@
     const slicesLayer = document.getElementById("slicesLayer");
     const dividersLayer = document.getElementById("dividersLayer");
 
-    // ===========================
-    // LocalStorage
-    // ===========================
     function loadSliceStates() {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
@@ -325,24 +206,20 @@
       }
       return Array(NUM_SLICES).fill(false);
     }
-
     function saveSliceStates(states) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(states));
     }
-
     let states = loadSliceStates();
 
     // ===========================
-    // SVG Helpers
+    // SVG helpers
     // ===========================
     function makeSVG(tag) {
       return document.createElementNS("http://www.w3.org/2000/svg", tag);
     }
-
     function polarToXY(cx, cy, r, angleRad) {
       return { x: cx + r * Math.cos(angleRad), y: cy + r * Math.sin(angleRad) };
     }
-
     function wedgePath(rOuter, rInner, startAngle, endAngle) {
       const p1 = polarToXY(CX, CY, rOuter, startAngle);
       const p2 = polarToXY(CX, CY, rOuter, endAngle);
@@ -358,14 +235,13 @@
         "Z"
       ].join(" ");
     }
-
     function dividerLine(angleRad) {
       const pOuter = polarToXY(CX, CY, R_OUTER, angleRad);
       const pInner = polarToXY(CX, CY, R_INNER, angleRad);
       return { pOuter, pInner };
     }
 
-    // Deterministic RNG so toppings don't jump around per slice
+    // Deterministic RNG per slice (stable positions)
     function mulberry32(seed) {
       return function() {
         let t = seed += 0x6D2B79F5;
@@ -376,175 +252,153 @@
     }
 
     // ===========================
-    // Topping Drawers
+    // Clean, simple topping shapes (like your reference image)
     // ===========================
-    function addPepperoni(g, x, y, r) {
+    function drawPepperoniOutline(g, x, y, r) {
+      const c = makeSVG("circle");
+      c.setAttribute("cx", x); c.setAttribute("cy", y); c.setAttribute("r", r);
+      g.appendChild(c);
+    }
+    function drawPepperoniColor(g, x, y, r) {
       const c1 = makeSVG("circle");
-      c1.setAttribute("cx", x);
-      c1.setAttribute("cy", y);
-      c1.setAttribute("r", r);
+      c1.setAttribute("cx", x); c1.setAttribute("cy", y); c1.setAttribute("r", r);
       c1.setAttribute("fill", "#b91c1c");
       c1.setAttribute("opacity", "0.95");
-
       const c2 = makeSVG("circle");
-      c2.setAttribute("cx", x);
-      c2.setAttribute("cy", y);
-      c2.setAttribute("r", r * 0.65);
+      c2.setAttribute("cx", x); c2.setAttribute("cy", y); c2.setAttribute("r", r*0.62);
       c2.setAttribute("fill", "#7f1d1d");
-      c2.setAttribute("opacity", "0.35");
-
-      g.appendChild(c1);
-      g.appendChild(c2);
+      c2.setAttribute("opacity", "0.25");
+      g.appendChild(c1); g.appendChild(c2);
     }
 
-    function addOlive(g, x, y, r) {
-      const outer = makeSVG("circle");
-      outer.setAttribute("cx", x);
-      outer.setAttribute("cy", y);
-      outer.setAttribute("r", r);
-      outer.setAttribute("fill", "#111827");
-      outer.setAttribute("opacity", "0.9");
-
-      const hole = makeSVG("circle");
-      hole.setAttribute("cx", x);
-      hole.setAttribute("cy", y);
-      hole.setAttribute("r", r * 0.45);
-      hole.setAttribute("fill", "rgba(0,0,0,0)");
-
-      g.appendChild(outer);
-      g.appendChild(hole);
+    function drawMushroomOutline(g, x, y, s) {
+      const cap = makeSVG("path");
+      cap.setAttribute("d", `M ${x - s} ${y} Q ${x} ${y - s*0.95} ${x + s} ${y} Q ${x} ${y + s*0.2} ${x - s} ${y} Z`);
+      const stem = makeSVG("path");
+      stem.setAttribute("d", `M ${x - s*0.33} ${y} Q ${x} ${y + s*1.0} ${x + s*0.33} ${y} Z`);
+      g.appendChild(cap); g.appendChild(stem);
+    }
+    function drawMushroomColor(g, x, y, s) {
+      const cap = makeSVG("path");
+      cap.setAttribute("d", `M ${x - s} ${y} Q ${x} ${y - s*0.95} ${x + s} ${y} Q ${x} ${y + s*0.2} ${x - s} ${y} Z`);
+      cap.setAttribute("fill", "#c7b299");
+      const stem = makeSVG("path");
+      stem.setAttribute("d", `M ${x - s*0.33} ${y} Q ${x} ${y + s*1.0} ${x + s*0.33} ${y} Z`);
+      stem.setAttribute("fill", "#ead9c4");
+      g.appendChild(cap); g.appendChild(stem);
     }
 
-    function addPepper(g, x, y, w, h, rotDeg) {
+    function drawChunkOutline(g, x, y, s) {
+      // small rounded triangle-ish blob (like cheese chunk / onion chunk in coloring pages)
       const p = makeSVG("path");
-      const x1 = x, y1 = y;
-      const x2 = x + w, y2 = y + h * 0.1;
-      const cx1 = x + w * 0.2, cy1 = y - h * 0.4;
-      const cx2 = x + w * 0.8, cy2 = y + h * 0.6;
-
-      p.setAttribute("d", `M ${x1} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2} ${y2}`);
-      p.setAttribute("fill", "none");
-      p.setAttribute("stroke", "#16a34a");
-      p.setAttribute("stroke-width", "4.5");
-      p.setAttribute("stroke-linecap", "round");
+      p.setAttribute("d", `M ${x} ${y-s}
+        Q ${x+s} ${y-s*0.2} ${x+s*0.55} ${y+s*0.75}
+        Q ${x} ${y+s*0.95} ${x-s*0.55} ${y+s*0.75}
+        Q ${x-s} ${y-s*0.2} ${x} ${y-s} Z`);
+      g.appendChild(p);
+    }
+    function drawChunkColor(g, x, y, s) {
+      const p = makeSVG("path");
+      p.setAttribute("d", `M ${x} ${y-s}
+        Q ${x+s} ${y-s*0.2} ${x+s*0.55} ${y+s*0.75}
+        Q ${x} ${y+s*0.95} ${x-s*0.55} ${y+s*0.75}
+        Q ${x-s} ${y-s*0.2} ${x} ${y-s} Z`);
+      p.setAttribute("fill", "#16a34a");
       p.setAttribute("opacity", "0.9");
-      p.setAttribute("transform", `rotate(${rotDeg} ${x} ${y})`);
       g.appendChild(p);
     }
 
-    function addMushroom(g, x, y, s, rotDeg) {
-      const wrap = makeSVG("g");
-      wrap.setAttribute("transform", `rotate(${rotDeg} ${x} ${y})`);
+    // ===========================
+    // Placement with spacing (prevents overlap / clumps)
+    // ===========================
+    function placeNonOverlappingPoints(rnd, sliceIndex, count, minDist) {
+      const points = [];
+      const a1 = START_OFFSET + sliceIndex * STEP;
+      const a2 = START_OFFSET + (sliceIndex + 1) * STEP;
 
-      const cap = makeSVG("path");
-      cap.setAttribute("d", `M ${x - s} ${y} Q ${x} ${y - s * 0.95} ${x + s} ${y} Q ${x} ${y + s * 0.2} ${x - s} ${y} Z`);
-      cap.setAttribute("fill", "#c7b299");
-      cap.setAttribute("opacity", "0.95");
+      // keep inside wedge with margins
+      const angMin = a1 + 0.18 * STEP;
+      const angMax = a2 - 0.18 * STEP;
+      const radMin = R_INNER + 18;
+      const radMax = R_OUTER - 18;
 
-      const stem = makeSVG("path");
-      stem.setAttribute("d", `M ${x - s * 0.35} ${y} Q ${x} ${y + s * 1.1} ${x + s * 0.35} ${y} Z`);
-      stem.setAttribute("fill", "#e6d5bf");
-      stem.setAttribute("opacity", "0.95");
+      let attempts = 0;
+      const maxAttempts = 350;
 
-      wrap.appendChild(cap);
-      wrap.appendChild(stem);
-      g.appendChild(wrap);
+      while (points.length < count && attempts < maxAttempts) {
+        attempts++;
+
+        // sample angle uniformly within wedge
+        const ang = angMin + rnd() * (angMax - angMin);
+
+        // sample radius with sqrt distribution for more uniform area
+        const t = rnd();
+        const rad = Math.sqrt(t) * (radMax - radMin) + radMin;
+
+        const x = CX + rad * Math.cos(ang);
+        const y = CY + rad * Math.sin(ang);
+
+        let ok = true;
+        for (const p of points) {
+          const dx = p.x - x, dy = p.y - y;
+          if ((dx*dx + dy*dy) < (minDist*minDist)) { ok = false; break; }
+        }
+        if (ok) points.push({ x, y });
+      }
+
+      return points;
     }
 
     function buildToppingsForSlice(sliceIndex, clipId, filled) {
       const outer = makeSVG("g");
       outer.setAttribute("clip-path", `url(#${clipId})`);
 
-      // Outline group (coloring book)
+      // Sauce tint under cheese when filled
+      const sauceTint = makeSVG("path");
+      sauceTint.setAttribute("fill", "url(#sauceGradient)");
+      sauceTint.setAttribute("opacity", filled ? "0.18" : "0");
+      outer.appendChild(sauceTint);
+
+      // Outline group = coloring book
       const outlineG = makeSVG("g");
       outlineG.setAttribute("fill", "none");
       outlineG.setAttribute("stroke", "#111");
-      outlineG.setAttribute("stroke-width", "1.6");
-      outlineG.setAttribute("opacity", filled ? "0" : "0.75");
+      outlineG.setAttribute("stroke-width", "1.7");
+      outlineG.setAttribute("opacity", filled ? "0" : "0.85");
 
-      // Color group (only visible when filled)
+      // Color group
       const colorG = makeSVG("g");
       colorG.setAttribute("opacity", filled ? "1" : "0");
 
-      // Deterministic random per slice so toppings don't jump around
-      const rnd = mulberry32(20260215 + sliceIndex * 999);
+      // Stable RNG per slice
+      const rnd = mulberry32(13579 + sliceIndex * 999);
 
-      // subtle sauce tint under cheese when filled (helps look like pizza)
-      const sauceTint = makeSVG("path");
-      sauceTint.setAttribute("fill", "url(#sauceGradient)");
-      sauceTint.setAttribute("opacity", filled ? "0.20" : "0");
-      outer.appendChild(sauceTint);
+      // 6–8 items per slice, spaced out
+      const itemCount = 6 + Math.floor(rnd() * 3);
+      const pts = placeNonOverlappingPoints(rnd, sliceIndex, itemCount, 14);
 
-      // 4–6 toppings per slice
-      const toppingCount = 4 + Math.floor(rnd() * 3);
-
-      for (let k = 0; k < toppingCount; k++) {
-        // IMPORTANT FIX:
-        // Place toppings using the SAME angle system as the slice wedge (START_OFFSET + STEP * index)
-        const ang = START_OFFSET + (sliceIndex + rnd()) * STEP;
-
-        // pick a radius away from center so toppings don't stack on the hub
-        const radMin = R_INNER + 18;
-        const radMax = R_OUTER - 18;
-        const rad = radMin + rnd() * (radMax - radMin);
-
-        const x = CX + rad * Math.cos(ang);
-        const y = CY + rad * Math.sin(ang);
-
+      // For each point, pick a simple topping type
+      for (let i = 0; i < pts.length; i++) {
+        const { x, y } = pts[i];
         const roll = rnd();
 
-        if (roll < 0.40) {
-          // pepperoni
-          const r = 5 + rnd() * 2.5;
-          if (filled) addPepperoni(colorG, x, y, r);
-          const c = makeSVG("circle");
-          c.setAttribute("cx", x); c.setAttribute("cy", y); c.setAttribute("r", r);
-          outlineG.appendChild(c);
+        if (roll < 0.50) {
+          // Pepperoni
+          const r = 6 + rnd() * 2;
+          drawPepperoniOutline(outlineG, x, y, r);
+          if (filled) drawPepperoniColor(colorG, x, y, r);
 
-        } else if (roll < 0.65) {
-          // olive
-          const r = 3.6 + rnd() * 2.0;
-          if (filled) addOlive(colorG, x, y, r);
-
-          const c1 = makeSVG("circle");
-          c1.setAttribute("cx", x); c1.setAttribute("cy", y); c1.setAttribute("r", r);
-          outlineG.appendChild(c1);
-
-          const c2 = makeSVG("circle");
-          c2.setAttribute("cx", x); c2.setAttribute("cy", y); c2.setAttribute("r", r * 0.45);
-          outlineG.appendChild(c2);
-
-        } else if (roll < 0.85) {
-          // pepper strip
-          const w = 14 + rnd() * 10;
-          const h = 10 + rnd() * 8;
-          const rot = -30 + rnd() * 60;
-          if (filled) addPepper(colorG, x, y, w, h, rot);
-
-          const p = makeSVG("path");
-          const x1 = x, y1 = y;
-          const x2 = x + w, y2 = y + h * 0.1;
-          const cx1 = x + w * 0.2, cy1 = y - h * 0.4;
-          const cx2 = x + w * 0.8, cy2 = y + h * 0.6;
-          p.setAttribute("d", `M ${x1} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2} ${y2}`);
-          p.setAttribute("transform", `rotate(${rot} ${x} ${y})`);
-          outlineG.appendChild(p);
+        } else if (roll < 0.78) {
+          // Mushroom
+          const s = 7 + rnd() * 2.5;
+          drawMushroomOutline(outlineG, x, y, s);
+          if (filled) drawMushroomColor(colorG, x, y, s);
 
         } else {
-          // mushroom
-          const s = 6.5 + rnd() * 3.5;
-          const rot = -25 + rnd() * 50;
-          if (filled) addMushroom(colorG, x, y, s, rot);
-
-          const cap = makeSVG("path");
-          cap.setAttribute("d", `M ${x - s} ${y} Q ${x} ${y - s * 0.95} ${x + s} ${y} Q ${x} ${y + s * 0.2} ${x - s} ${y} Z`);
-          cap.setAttribute("transform", `rotate(${rot} ${x} ${y})`);
-          outlineG.appendChild(cap);
-
-          const stem = makeSVG("path");
-          stem.setAttribute("d", `M ${x - s * 0.35} ${y} Q ${x} ${y + s * 1.1} ${x + s * 0.35} ${y} Z`);
-          stem.setAttribute("transform", `rotate(${rot} ${x} ${y})`);
-          outlineG.appendChild(stem);
+          // Chunk blob (pepper/cheese chunk)
+          const s = 4.5 + rnd() * 2.0;
+          drawChunkOutline(outlineG, x, y, s);
+          if (filled) drawChunkColor(colorG, x, y, s);
         }
       }
 
@@ -555,10 +409,9 @@
     }
 
     // ===========================
-    // Rendering
+    // Render
     // ===========================
     function render() {
-      // Clear layers
       dynDefs.textContent = "";
       slicesLayer.textContent = "";
       dividersLayer.textContent = "";
@@ -567,11 +420,10 @@
         const a1 = START_OFFSET + i * STEP;
         const a2 = START_OFFSET + (i + 1) * STEP;
 
-        // Clip path per slice (arc wedge => perfect circle)
+        // Clip path
         const clipId = `clip_slice_${i}`;
         const clip = makeSVG("clipPath");
         clip.setAttribute("id", clipId);
-
         const clipShape = makeSVG("path");
         clipShape.setAttribute("d", wedgePath(R_OUTER, R_INNER, a1, a2));
         clip.appendChild(clipShape);
@@ -590,7 +442,7 @@
         base.setAttribute("clip-path", `url(#${clipId})`);
         sliceGroup.appendChild(base);
 
-        // Toppings (clipped)
+        // Toppings
         const toppings = buildToppingsForSlice(i, clipId, states[i]);
         toppings.sauceTint.setAttribute("d", wedgePath(R_OUTER, R_INNER, a1, a2));
         sliceGroup.appendChild(toppings.group);
@@ -612,22 +464,15 @@
         };
 
         hit.addEventListener("click", toggle);
-        hit.addEventListener("touchstart", (e) => {
-          e.preventDefault(); // avoid double trigger
-          toggle();
-        }, { passive: false });
-
+        hit.addEventListener("touchstart", (e) => { e.preventDefault(); toggle(); }, { passive: false });
         hit.addEventListener("keydown", (e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            toggle();
-          }
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
         });
 
         sliceGroup.appendChild(hit);
         slicesLayer.appendChild(sliceGroup);
 
-        // Divider line
+        // Divider
         const { pOuter, pInner } = dividerLine(a1);
         const line = makeSVG("line");
         line.setAttribute("x1", pInner.x);
@@ -672,9 +517,7 @@
       triggerConfetti();
     }
 
-    function closeModal() {
-      completionModal.classList.remove("show");
-    }
+    function closeModal() { completionModal.classList.remove("show"); }
 
     function resetPizza() {
       states = Array(NUM_SLICES).fill(false);
@@ -699,8 +542,7 @@
 
     function triggerConfetti() {
       document.querySelectorAll(".confetti").forEach(el => el.remove());
-
-      const colors = ["#ff6b6b", "#51cf66", "#4c6ef5", "#ffd43b", "#ff922b"];
+      const colors = ["#ff6b6b","#51cf66","#4c6ef5","#ffd43b","#ff922b"];
       const confettiPieces = 55;
 
       for (let i = 0; i < confettiPieces; i++) {
@@ -715,16 +557,13 @@
           c.style.opacity = "1";
           c.style.animation = `confettiFall ${Math.random() * 2 + 2.2}s ease-out forwards`;
           c.style.transform = `rotate(${Math.random() * 360}deg)`;
-
           document.body.appendChild(c);
           setTimeout(() => c.remove(), 3600);
         }, i * 28);
       }
     }
 
-    // ===========================
     // Init
-    // ===========================
     updateCountDisplay();
     render();
     checkCompletion();
