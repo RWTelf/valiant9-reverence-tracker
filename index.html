@@ -107,7 +107,7 @@
     <h1>🎉 Reverence Party Progress<br>Valiant 9</h1>
 
     <div class="pizza-container">
-      <svg id="pizzaSvg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pizza progress tracker">
+      <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pizza progress tracker">
         <defs>
           <radialGradient id="cheeseGradient" cx="40%" cy="40%">
             <stop offset="0%" stop-color="#f7dc6f" />
@@ -129,7 +129,6 @@
             <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#000" flood-opacity="0.18" />
           </filter>
 
-          <!-- clipPaths injected here -->
           <g id="dynDefs"></g>
         </defs>
 
@@ -143,11 +142,11 @@
         </g>
 
         <!-- Layers -->
-        <g id="sliceBaseLayer"></g>        <!-- white/cheese fills (per slice) -->
-        <g id="coloredPepperoniLayer"></g> <!-- colored pepperoni clipped to earned slices -->
-        <g id="outlineLayer"></g>          <!-- ONE global coloring-page outline on top -->
-        <g id="dividerLayer"></g>          <!-- slice lines -->
-        <g id="hitLayer"></g>              <!-- tap targets -->
+        <g id="sliceBaseLayer"></g>
+        <g id="coloredPepperoniLayer"></g>
+        <g id="outlineLayer"></g>
+        <g id="dividerLayer"></g>
+        <g id="hitLayer"></g>
       </svg>
     </div>
 
@@ -171,25 +170,19 @@
   </div>
 
   <script>
-    // ===========================
-    // Constants & State
-    // ===========================
     const NUM_SLICES = 10;
-    const PEPPERONI_PER_SLICE = 3;           // same amount per slice
-    const STORAGE_KEY = "pizzaSliceStates_pepperoni_v1";
+    const PEPPERONI_PER_SLICE = 3;
+    const STORAGE_KEY = "pizzaSliceStates_pepperoni_v2";
 
-    // Geometry
     const CX = 100, CY = 100;
-    const R_PIZZA = 84;        // cheese edge
-    const R_CHEESE_WAVY = 78;  // wavy inner boundary
+    const R_PIZZA = 84;
+    const R_CHEESE_WAVY = 78;
     const START_OFFSET = -Math.PI / 2;
     const STEP = (2 * Math.PI) / NUM_SLICES;
 
-    // Crust rings (outline look like coloring page)
     const R_CRUST_OUT = 95;
     const R_CRUST_IN  = 84;
 
-    // DOM
     const dynDefs = document.getElementById("dynDefs");
     const sliceBaseLayer = document.getElementById("sliceBaseLayer");
     const coloredPepperoniLayer = document.getElementById("coloredPepperoniLayer");
@@ -218,36 +211,18 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify(states));
     }
     let states = loadSliceStates();
-
-    // used to only play the fanfare when we transition to "all filled"
     let wasAllFilled = states.every(Boolean);
 
-    // ===========================
-    // SVG helpers
-    // ===========================
-    function makeSVG(tag) {
-      return document.createElementNS("http://www.w3.org/2000/svg", tag);
-    }
-    function polarToXY(r, a) {
-      return { x: CX + r * Math.cos(a), y: CY + r * Math.sin(a) };
-    }
+    function makeSVG(tag) { return document.createElementNS("http://www.w3.org/2000/svg", tag); }
+    function polarToXY(r, a) { return { x: CX + r * Math.cos(a), y: CY + r * Math.sin(a) }; }
 
-    // Wedge that goes to an actual point in the center
     function wedgePathPointCenter(rOuter, startAngle, endAngle) {
       const p1 = polarToXY(rOuter, startAngle);
       const p2 = polarToXY(rOuter, endAngle);
       const largeArc = (endAngle - startAngle) > Math.PI ? 1 : 0;
-      return [
-        `M ${CX} ${CY}`,
-        `L ${p1.x} ${p1.y}`,
-        `A ${rOuter} ${rOuter} 0 ${largeArc} 1 ${p2.x} ${p2.y}`,
-        "Z"
-      ].join(" ");
+      return `M ${CX} ${CY} L ${p1.x} ${p1.y} A ${rOuter} ${rOuter} 0 ${largeArc} 1 ${p2.x} ${p2.y} Z`;
     }
 
-    // ===========================
-    // Deterministic RNG
-    // ===========================
     function mulberry32(seed) {
       return function() {
         let t = seed += 0x6D2B79F5;
@@ -257,33 +232,23 @@
       };
     }
 
-    // ===========================
-    // Wavy cheese edge outline
-    // ===========================
     function buildWavyCheeseEdgePath(r, bumps) {
       const pts = [];
       const total = bumps * 2;
       for (let i = 0; i <= total; i++) {
         const t = (i / total) * (Math.PI * 2);
         const wobble = (i % 2 === 0) ? 3.8 : -3.2;
-        const rr = r + wobble;
-        pts.push(polarToXY(rr, t));
+        pts.push(polarToXY(r + wobble, t));
       }
       let d = `M ${pts[0].x} ${pts[0].y}`;
       for (let i = 1; i < pts.length; i++) {
-        const prev = pts[i - 1];
-        const cur  = pts[i];
-        const midX = (prev.x + cur.x) / 2;
-        const midY = (prev.y + cur.y) / 2;
+        const prev = pts[i - 1], cur = pts[i];
+        const midX = (prev.x + cur.x) / 2, midY = (prev.y + cur.y) / 2;
         d += ` Q ${prev.x} ${prev.y} ${midX} ${midY}`;
       }
-      d += " Z";
-      return d;
+      return d + " Z";
     }
 
-    // ===========================
-    // Pepperoni drawing
-    // ===========================
     function pepperoniOutline(g, x, y, r) {
       const c = makeSVG("circle");
       c.setAttribute("cx", x); c.setAttribute("cy", y); c.setAttribute("r", r);
@@ -294,62 +259,54 @@
       const c1 = makeSVG("circle");
       c1.setAttribute("cx", x); c1.setAttribute("cy", y); c1.setAttribute("r", r);
       c1.setAttribute("fill", "#b91c1c");
-      c1.setAttribute("opacity", "0.95");
+      c1.setAttribute("opacity", "0.98");
 
       const c2 = makeSVG("circle");
       c2.setAttribute("cx", x); c2.setAttribute("cy", y); c2.setAttribute("r", r * 0.62);
       c2.setAttribute("fill", "#7f1d1d");
-      c2.setAttribute("opacity", "0.25");
+      c2.setAttribute("opacity", "0.22");
 
       g.appendChild(c1); g.appendChild(c2);
     }
 
-    // ===========================
-    // Even pepperoni distribution: same count per slice, no overlaps
-    // ===========================
-    function dist2(a, b) {
+    function distance(a, b) {
       const dx = a.x - b.x, dy = a.y - b.y;
-      return dx*dx + dy*dy;
+      return Math.sqrt(dx*dx + dy*dy);
     }
 
+    // True non-overlap: dist >= (r1 + r2 + gap)
     function generatePepperoniPositions() {
+      const rnd = mulberry32(909090);
       const positions = [];
-      const rnd = mulberry32(909090); // stable
 
-      // spacing tuned to avoid overlap even across slice boundaries
-      const minCenterDist = 16; // pixels in SVG space
-      const maxAttemptsPerPep = 500;
+      const gap = 2.2;                 // extra breathing room
+      const maxAttemptsPerPep = 1200;  // raise attempts to guarantee placements
 
       for (let slice = 0; slice < NUM_SLICES; slice++) {
         const a1 = START_OFFSET + slice * STEP;
         const a2 = START_OFFSET + (slice + 1) * STEP;
 
-        // keep pepperoni well inside slice so it looks natural
         const angMin = a1 + 0.16 * STEP;
         const angMax = a2 - 0.16 * STEP;
 
-        const rMin = 22;
-        const rMax = R_CHEESE_WAVY - 12;
+        const rMin = 24;
+        const rMax = R_CHEESE_WAVY - 14;
 
         for (let k = 0; k < PEPPERONI_PER_SLICE; k++) {
-          let attempts = 0;
           let placed = false;
 
-          while (attempts < maxAttemptsPerPep && !placed) {
-            attempts++;
-
+          for (let attempt = 0; attempt < maxAttemptsPerPep && !placed; attempt++) {
             const ang = angMin + rnd() * (angMax - angMin);
-            const t = rnd(); // sqrt for area distribution
+            const t = rnd();
             const rad = Math.sqrt(t) * (rMax - rMin) + rMin;
 
             const p = polarToXY(rad, ang);
-            const rPep = 7 + rnd() * 1.5;
+            const rPep = 7.2 + rnd() * 1.2;
 
-            // avoid overlaps with any already placed pepperoni
             let ok = true;
-            for (const existing of positions) {
-              const min = minCenterDist + existing.r * 0.25 + rPep * 0.25;
-              if (dist2(p, existing) < (min * min)) { ok = false; break; }
+            for (const e of positions) {
+              const minDist = (e.r + rPep + gap);
+              if (distance(p, e) < minDist) { ok = false; break; }
             }
 
             if (ok) {
@@ -358,7 +315,7 @@
             }
           }
 
-          // if something ever fails (unlikely), fall back to a reasonable spot
+          // fallback (very rare)
           if (!placed) {
             const midAng = (angMin + angMax) / 2;
             const rad = rMin + (k + 1) * ((rMax - rMin) / (PEPPERONI_PER_SLICE + 1));
@@ -374,7 +331,7 @@
     const PEPPERONI_POSITIONS = generatePepperoniPositions();
 
     // ===========================
-    // Trumpet / fanfare sound (WebAudio synth)
+    // Louder / longer trumpet fanfare (WebAudio synth)
     // ===========================
     let audioCtx = null;
 
@@ -383,83 +340,87 @@
         const Ctx = window.AudioContext || window.webkitAudioContext;
         audioCtx = new Ctx();
       }
-      // iOS sometimes creates it suspended until first user gesture
       if (audioCtx.state === "suspended") {
         audioCtx.resume().catch(() => {});
       }
     }
 
-    function midiToFreq(m) {
-      return 440 * Math.pow(2, (m - 69) / 12);
-    }
+    function midiToFreq(m) { return 440 * Math.pow(2, (m - 69) / 12); }
 
     function playFanfare() {
       ensureAudioContext();
       const now = audioCtx.currentTime;
 
-      // A simple triumphant fanfare (C major): C5 E5 G5 C6 | G5 E5 C5
-      const notes = [
-        { m: 72, t: 0.00, d: 0.18 },
-        { m: 76, t: 0.20, d: 0.18 },
-        { m: 79, t: 0.40, d: 0.22 },
-        { m: 84, t: 0.65, d: 0.35 },
-        { m: 79, t: 1.05, d: 0.18 },
-        { m: 76, t: 1.25, d: 0.18 },
-        { m: 72, t: 1.45, d: 0.35 },
+      // Longer fanfare: C major-ish, triumphant
+      const phrase = [
+        { m: 72, t: 0.00, d: 0.22 }, // C5
+        { m: 76, t: 0.24, d: 0.22 }, // E5
+        { m: 79, t: 0.48, d: 0.26 }, // G5
+        { m: 84, t: 0.78, d: 0.40 }, // C6
+        { m: 83, t: 1.22, d: 0.22 }, // B5
+        { m: 84, t: 1.46, d: 0.30 }, // C6
+        { m: 79, t: 1.82, d: 0.22 }, // G5
+        { m: 76, t: 2.06, d: 0.22 }, // E5
+        { m: 72, t: 2.30, d: 0.46 }, // C5 (hold)
       ];
 
-      // "Trumpet-ish" timbre: sawtooth -> lowpass filter + a bit of vibrato
+      // master envelope (louder + longer)
       const master = audioCtx.createGain();
-      master.gain.setValueAtTime(0.0, now);
-      master.gain.linearRampToValueAtTime(0.9, now + 0.03);
-      master.gain.exponentialRampToValueAtTime(0.001, now + 2.0);
+      master.gain.setValueAtTime(0.0001, now);
+      master.gain.exponentialRampToValueAtTime(1.25, now + 0.05);   // louder
+      master.gain.exponentialRampToValueAtTime(0.001, now + 3.4);   // longer tail
       master.connect(audioCtx.destination);
 
+      // mild "brass" filter
       const filter = audioCtx.createBiquadFilter();
       filter.type = "lowpass";
-      filter.frequency.setValueAtTime(1800, now);
-      filter.Q.setValueAtTime(0.9, now);
+      filter.frequency.setValueAtTime(2200, now);
+      filter.Q.setValueAtTime(0.8, now);
       filter.connect(master);
 
+      // vibrato
       const vibratoOsc = audioCtx.createOscillator();
       vibratoOsc.type = "sine";
-      vibratoOsc.frequency.setValueAtTime(5.5, now);
+      vibratoOsc.frequency.setValueAtTime(5.2, now);
 
       const vibratoGain = audioCtx.createGain();
-      vibratoGain.gain.setValueAtTime(9, now); // vibrato depth (Hz)
+      vibratoGain.gain.setValueAtTime(10, now); // vibrato depth (Hz)
 
       vibratoOsc.connect(vibratoGain);
 
-      for (const n of notes) {
-        const start = now + n.t;
-        const end = start + n.d;
+      // two-voice brass: main + octave-down support
+      function scheduleVoice(semitoneOffset, level) {
+        for (const n of phrase) {
+          const start = now + n.t;
+          const end = start + n.d;
 
-        const osc = audioCtx.createOscillator();
-        osc.type = "sawtooth";
-        osc.frequency.setValueAtTime(midiToFreq(n.m), start);
+          const osc = audioCtx.createOscillator();
+          osc.type = "sawtooth";
+          osc.frequency.setValueAtTime(midiToFreq(n.m + semitoneOffset), start);
 
-        // apply vibrato
-        vibratoGain.connect(osc.frequency);
+          // vibrato into freq
+          vibratoGain.connect(osc.frequency);
 
-        const g = audioCtx.createGain();
-        g.gain.setValueAtTime(0.0001, start);
-        g.gain.exponentialRampToValueAtTime(0.75, start + 0.03);
-        g.gain.exponentialRampToValueAtTime(0.0001, end);
+          const g = audioCtx.createGain();
+          g.gain.setValueAtTime(0.0001, start);
+          g.gain.exponentialRampToValueAtTime(level, start + 0.035);
+          g.gain.exponentialRampToValueAtTime(0.0001, end);
 
-        osc.connect(g);
-        g.connect(filter);
+          osc.connect(g);
+          g.connect(filter);
 
-        osc.start(start);
-        osc.stop(end + 0.02);
+          osc.start(start);
+          osc.stop(end + 0.03);
+        }
       }
 
+      scheduleVoice(0, 0.70);    // main voice
+      scheduleVoice(-12, 0.38);  // octave down
+
       vibratoOsc.start(now);
-      vibratoOsc.stop(now + 2.0);
+      vibratoOsc.stop(now + 3.5);
     }
 
-    // ===========================
-    // Render
-    // ===========================
     function updateCountDisplay() {
       const filledCount = states.filter(Boolean).length;
       filledCountSpan.textContent = filledCount;
@@ -474,12 +435,10 @@
       dividerLayer.textContent = "";
       hitLayer.textContent = "";
 
-      // clipPaths + base fills + colored layer per slice
       for (let i = 0; i < NUM_SLICES; i++) {
         const a1 = START_OFFSET + i * STEP;
         const a2 = START_OFFSET + (i + 1) * STEP;
 
-        // clipPath
         const clipId = `clip_slice_${i}`;
         const clip = makeSVG("clipPath");
         clip.setAttribute("id", clipId);
@@ -488,34 +447,28 @@
         clip.appendChild(clipShape);
         dynDefs.appendChild(clip);
 
-        // base wedge (white vs cheese)
         const base = makeSVG("path");
         base.setAttribute("d", wedgePathPointCenter(R_PIZZA, a1, a2));
         base.setAttribute("fill", states[i] ? "url(#cheeseGradient)" : "white");
         base.setAttribute("stroke", "none");
         sliceBaseLayer.appendChild(base);
 
-        // colored pepperoni clipped to slice
         if (states[i]) {
           const coloredGroup = makeSVG("g");
           coloredGroup.setAttribute("clip-path", `url(#${clipId})`);
 
-          // subtle sauce tint
           const sauce = makeSVG("path");
           sauce.setAttribute("d", wedgePathPointCenter(R_PIZZA, a1, a2));
           sauce.setAttribute("fill", "url(#sauceGradient)");
           sauce.setAttribute("opacity", "0.12");
           coloredGroup.appendChild(sauce);
 
-          // draw ALL pepperoni (clipping shows only the part in this slice)
           for (const p of PEPPERONI_POSITIONS) {
             pepperoniColor(coloredGroup, p.x, p.y, p.r);
           }
-
           coloredPepperoniLayer.appendChild(coloredGroup);
         }
 
-        // divider line
         const pOuter = polarToXY(R_PIZZA, a1);
         const line = makeSVG("line");
         line.setAttribute("x1", CX); line.setAttribute("y1", CY);
@@ -525,7 +478,6 @@
         line.setAttribute("opacity", "0.75");
         dividerLayer.appendChild(line);
 
-        // tap target
         const hit = makeSVG("path");
         hit.setAttribute("d", wedgePathPointCenter(R_PIZZA, a1, a2));
         hit.setAttribute("class", "slice-hit");
@@ -534,7 +486,7 @@
         hit.setAttribute("aria-label", `Slice ${i + 1}`);
 
         const toggle = () => {
-          ensureAudioContext(); // keeps iOS happy for sound later
+          ensureAudioContext();
           states[i] = !states[i];
           saveSliceStates(states);
           updateCountDisplay();
@@ -543,16 +495,14 @@
         };
 
         hit.addEventListener("click", toggle);
-        hit.addEventListener("touchstart", (e) => { e.preventDefault(); toggle(); }, { passive: false });
+        hit.addEventListener("touchstart", (e) => { e.preventDefault(); toggle(); }, { passive:false });
         hit.addEventListener("keydown", (e) => {
           if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
         });
-
         hitLayer.appendChild(hit);
       }
 
-      // ONE global outline on top (coloring page)
-      // crust rings
+      // Global outline (coloring page)
       const crustOuter = makeSVG("circle");
       crustOuter.setAttribute("cx", CX);
       crustOuter.setAttribute("cy", CY);
@@ -573,7 +523,6 @@
       crustInner.setAttribute("opacity", "0.90");
       outlineLayer.appendChild(crustInner);
 
-      // wavy cheese edge
       const cheeseEdge = makeSVG("path");
       cheeseEdge.setAttribute("d", buildWavyCheeseEdgePath(R_CHEESE_WAVY, 10));
       cheeseEdge.setAttribute("fill", "none");
@@ -582,7 +531,6 @@
       cheeseEdge.setAttribute("opacity", "0.90");
       outlineLayer.appendChild(cheeseEdge);
 
-      // cheese circle boundary
       const cheeseBoundary = makeSVG("circle");
       cheeseBoundary.setAttribute("cx", CX);
       cheeseBoundary.setAttribute("cy", CY);
@@ -593,12 +541,12 @@
       cheeseBoundary.setAttribute("opacity", "0.90");
       outlineLayer.appendChild(cheeseBoundary);
 
-      // pepperoni outlines (global)
+      // Pepperoni outlines as WHITE-FILLED circles (so overlaps never look transparent)
       const pepOutlineG = makeSVG("g");
-      pepOutlineG.setAttribute("fill", "none");
+      pepOutlineG.setAttribute("fill", "white");
       pepOutlineG.setAttribute("stroke", "#111");
       pepOutlineG.setAttribute("stroke-width", "1.7");
-      pepOutlineG.setAttribute("opacity", "0.92");
+      pepOutlineG.setAttribute("opacity", "0.95");
 
       for (const p of PEPPERONI_POSITIONS) {
         pepperoniOutline(pepOutlineG, p.x, p.y, p.r);
@@ -606,13 +554,9 @@
       outlineLayer.appendChild(pepOutlineG);
     }
 
-    // ===========================
-    // Completion + Buttons
-    // ===========================
     function checkCompletion(fromUserGesture) {
       const allFilled = states.every(Boolean);
 
-      // Play fanfare only when we *transition* to allFilled, and triggered by a gesture
       if (allFilled && !wasAllFilled && fromUserGesture) {
         playFanfare();
       }
@@ -645,7 +589,6 @@
       saveSliceStates(states);
       updateCountDisplay();
       render();
-      // treat as user gesture
       wasAllFilled = was;
       checkCompletion(true);
     }
@@ -655,7 +598,6 @@
     btnClose.addEventListener("click", closeModal);
     btnResetModal.addEventListener("click", resetPizza);
 
-    // Confetti (kept as-is)
     function triggerConfetti() {
       document.querySelectorAll(".confetti").forEach(el => el.remove());
       const colors = ["#ff6b6b","#51cf66","#4c6ef5","#ffd43b","#ff922b"];
@@ -682,7 +624,6 @@
     // Init
     updateCountDisplay();
     render();
-    // On load, do NOT auto-play fanfare (iOS won't allow it anyway)
     checkCompletion(false);
   </script>
 </body>
