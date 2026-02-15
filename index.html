@@ -25,37 +25,39 @@
     }
 
     h1 {
-      color:white; font-size:28px; font-weight:700; margin:0;
+      color:white; font-size:28px; font-weight:800; margin:0;
       text-shadow:0 2px 10px rgba(0,0,0,0.2);
       text-align:center; line-height:1.15;
     }
 
     .pizza-container {
       position:relative; width:320px; height:320px;
-      filter: drop-shadow(0 10px 25px rgba(0, 0, 0, 0.3));
+      filter: drop-shadow(0 10px 25px rgba(0,0,0,0.30));
     }
 
     svg { width:100%; height:100%; display:block; touch-action:manipulation; }
 
+    /* Big invisible tap target per slice */
     .slice-hit {
       cursor:pointer;
       -webkit-tap-highlight-color:transparent;
       pointer-events:all;
       fill: rgba(0,0,0,0.001);
       stroke: rgba(0,0,0,0.001);
-      stroke-width: 18;
+      stroke-width: 22;       /* makes center easy to tap */
+      stroke-linejoin: round;
       paint-order: stroke fill;
     }
 
     .counter {
-      color:white; font-size:18px; font-weight:600;
+      color:white; font-size:18px; font-weight:700;
       text-shadow:0 2px 8px rgba(0,0,0,0.2);
     }
 
     .button-group { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
 
     button {
-      padding:14px 28px; font-size:16px; font-weight:700;
+      padding:14px 28px; font-size:16px; font-weight:800;
       border:none; border-radius:12px; cursor:pointer;
       transition:all 0.2s ease;
       -webkit-appearance:none; appearance:none;
@@ -128,7 +130,7 @@
             <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#000" flood-opacity="0.18" />
           </filter>
 
-          <!-- Dynamic clipPaths injected here -->
+          <!-- clipPaths injected here -->
           <g id="dynDefs"></g>
         </defs>
 
@@ -141,14 +143,12 @@
           <circle cx="100" cy="100" r="84" fill="url(#sauceGradient)"></circle>
         </g>
 
-        <!-- NEW: unified coloring-page underlay -->
-        <g id="underlayLayer"></g>
-
-        <g id="slicesLayer"></g>
-        <g id="dividersLayer"></g>
-
-        <!-- center highlight -->
-        <circle cx="100" cy="100" r="10" fill="rgba(255,255,255,0.35)"></circle>
+        <!-- Layers -->
+        <g id="sliceBaseLayer"></g>      <!-- white/cheese fills (per slice) -->
+        <g id="coloredToppingsLayer"></g><!-- colored fills clipped to earned slices -->
+        <g id="outlineLayer"></g>        <!-- ONE global coloring-page outline on top -->
+        <g id="dividerLayer"></g>        <!-- slice lines -->
+        <g id="hitLayer"></g>            <!-- tap targets -->
       </svg>
     </div>
 
@@ -176,33 +176,33 @@
     // Constants & State
     // ===========================
     const NUM_SLICES = 10;
-    const STORAGE_KEY = "pizzaSliceStates_v5";
+    const STORAGE_KEY = "pizzaSliceStates_final_v1";
 
-    // SVG geometry
+    // Geometry
     const CX = 100, CY = 100;
-    const R_OUTER = 84; // cheese edge (outer)
-    const R_INNER = 12; // hub
-
+    const R_PIZZA = 84;        // cheese edge
+    const R_CHEESE_WAVY = 78;  // wavy inner boundary
     const START_OFFSET = -Math.PI / 2;
     const STEP = (2 * Math.PI) / NUM_SLICES;
 
-    // Underlay geometry (for unified coloring page look)
+    // Crust rings (outline look like coloring page)
     const R_CRUST_OUT = 95;
     const R_CRUST_IN  = 84;
-    const R_CHEESE_WAVY = 78;
 
     // DOM
+    const dynDefs = document.getElementById("dynDefs");
+    const sliceBaseLayer = document.getElementById("sliceBaseLayer");
+    const coloredToppingsLayer = document.getElementById("coloredToppingsLayer");
+    const outlineLayer = document.getElementById("outlineLayer");
+    const dividerLayer = document.getElementById("dividerLayer");
+    const hitLayer = document.getElementById("hitLayer");
+
     const filledCountSpan = document.getElementById("filledCount");
     const btnReset = document.getElementById("btnReset");
     const btnFill = document.getElementById("btnFill");
     const btnClose = document.getElementById("btnClose");
     const btnResetModal = document.getElementById("btnResetModal");
     const completionModal = document.getElementById("completionModal");
-
-    const dynDefs = document.getElementById("dynDefs");
-    const underlayLayer = document.getElementById("underlayLayer");
-    const slicesLayer = document.getElementById("slicesLayer");
-    const dividersLayer = document.getElementById("dividersLayer");
 
     function loadSliceStates() {
       const stored = localStorage.getItem(STORAGE_KEY);
@@ -225,31 +225,26 @@
     function makeSVG(tag) {
       return document.createElementNS("http://www.w3.org/2000/svg", tag);
     }
-    function polarToXY(cx, cy, r, angleRad) {
-      return { x: cx + r * Math.cos(angleRad), y: cy + r * Math.sin(angleRad) };
+    function polarToXY(r, a) {
+      return { x: CX + r * Math.cos(a), y: CY + r * Math.sin(a) };
     }
-    function wedgePath(rOuter, rInner, startAngle, endAngle) {
-      const p1 = polarToXY(CX, CY, rOuter, startAngle);
-      const p2 = polarToXY(CX, CY, rOuter, endAngle);
-      const p3 = polarToXY(CX, CY, rInner, endAngle);
-      const p4 = polarToXY(CX, CY, rInner, startAngle);
-      const largeArc = (endAngle - startAngle) > Math.PI ? 1 : 0;
 
+    // Wedge that goes to an actual point in the center
+    function wedgePathPointCenter(rOuter, startAngle, endAngle) {
+      const p1 = polarToXY(rOuter, startAngle);
+      const p2 = polarToXY(rOuter, endAngle);
+      const largeArc = (endAngle - startAngle) > Math.PI ? 1 : 0;
       return [
-        `M ${p1.x} ${p1.y}`,
+        `M ${CX} ${CY}`,
+        `L ${p1.x} ${p1.y}`,
         `A ${rOuter} ${rOuter} 0 ${largeArc} 1 ${p2.x} ${p2.y}`,
-        `L ${p3.x} ${p3.y}`,
-        `A ${rInner} ${rInner} 0 ${largeArc} 0 ${p4.x} ${p4.y}`,
         "Z"
       ].join(" ");
     }
-    function dividerLine(angleRad) {
-      const pOuter = polarToXY(CX, CY, R_OUTER, angleRad);
-      const pInner = polarToXY(CX, CY, R_INNER, angleRad);
-      return { pOuter, pInner };
-    }
 
-    // Deterministic RNG per slice
+    // ===========================
+    // Deterministic RNG (stable drawing)
+    // ===========================
     function mulberry32(seed) {
       return function() {
         let t = seed += 0x6D2B79F5;
@@ -260,19 +255,17 @@
     }
 
     // ===========================
-    // Unified underlay (coloring page outline)
+    // Coloring-page outline: crust rings + wavy cheese edge
     // ===========================
     function buildWavyCheeseEdgePath(r, bumps) {
-      // Simple "wavy circle" using quadratic curves
       const pts = [];
       const total = bumps * 2;
       for (let i = 0; i <= total; i++) {
         const t = (i / total) * (Math.PI * 2);
-        const wobble = (i % 2 === 0) ? 3.8 : -3.2; // alternating in/out
+        const wobble = (i % 2 === 0) ? 3.8 : -3.2;
         const rr = r + wobble;
-        pts.push(polarToXY(CX, CY, rr, t));
+        pts.push(polarToXY(rr, t));
       }
-
       let d = `M ${pts[0].x} ${pts[0].y}`;
       for (let i = 1; i < pts.length; i++) {
         const prev = pts[i - 1];
@@ -285,49 +278,72 @@
       return d;
     }
 
-    function drawUnderlay() {
-      underlayLayer.textContent = "";
-
-      // Outer crust ring outline (like reference image)
-      const crustOuter = makeSVG("circle");
-      crustOuter.setAttribute("cx", CX);
-      crustOuter.setAttribute("cy", CY);
-      crustOuter.setAttribute("r", R_CRUST_OUT);
-      crustOuter.setAttribute("fill", "none");
-      crustOuter.setAttribute("stroke", "#111");
-      crustOuter.setAttribute("stroke-width", "1.6");
-      crustOuter.setAttribute("opacity", "0.95");
-      underlayLayer.appendChild(crustOuter);
-
-      const crustInner = makeSVG("circle");
-      crustInner.setAttribute("cx", CX);
-      crustInner.setAttribute("cy", CY);
-      crustInner.setAttribute("r", R_CRUST_IN);
-      crustInner.setAttribute("fill", "none");
-      crustInner.setAttribute("stroke", "#111");
-      crustInner.setAttribute("stroke-width", "1.4");
-      crustInner.setAttribute("opacity", "0.85");
-      underlayLayer.appendChild(crustInner);
-
-      // Wavy cheese boundary
-      const cheeseEdge = makeSVG("path");
-      cheeseEdge.setAttribute("d", buildWavyCheeseEdgePath(R_CHEESE_WAVY, 10));
-      cheeseEdge.setAttribute("fill", "none");
-      cheeseEdge.setAttribute("stroke", "#111");
-      cheeseEdge.setAttribute("stroke-width", "1.4");
-      cheeseEdge.setAttribute("opacity", "0.85");
-      underlayLayer.appendChild(cheeseEdge);
+    // ===========================
+    // Global toppings (single layout across whole pizza)
+    // ===========================
+    function dist2(a, b) {
+      const dx = a.x - b.x, dy = a.y - b.y;
+      return dx*dx + dy*dy;
     }
 
-    // ===========================
-    // Clean topping shapes (pepperoni, mushroom, chunk)
-    // ===========================
-    function drawPepperoniOutline(g, x, y, r) {
+    function generateGlobalToppings() {
+      const rnd = mulberry32(424242); // stable across reloads
+      const toppings = [];
+
+      // A clean, coloring-page amount of toppings (not overcrowded)
+      const target = 18; // adjust if you want more/less
+      const minDist = 16; // keeps spacing clean
+
+      let attempts = 0;
+      while (toppings.length < target && attempts < 2000) {
+        attempts++;
+
+        // sample angle uniformly
+        const ang = rnd() * Math.PI * 2;
+
+        // sample radius with sqrt distribution for even area coverage
+        const t = rnd();
+        const rMin = 18;
+        const rMax = R_CHEESE_WAVY - 10;
+        const rad = Math.sqrt(t) * (rMax - rMin) + rMin;
+
+        const p = polarToXY(rad, ang);
+
+        // collision avoid
+        let ok = true;
+        for (const existing of toppings) {
+          if (dist2(p, existing) < (minDist*minDist)) { ok = false; break; }
+        }
+        if (!ok) continue;
+
+        // choose a topping type that matches the reference vibe
+        const roll = rnd();
+        let type = "pepperoni";
+        if (roll < 0.55) type = "pepperoni";
+        else if (roll < 0.80) type = "mushroom";
+        else type = "chunk";
+
+        // sizes
+        let size = 7;
+        if (type === "pepperoni") size = 7 + rnd()*1.5;
+        if (type === "mushroom")  size = 8 + rnd()*2.0;
+        if (type === "chunk")     size = 5 + rnd()*2.0;
+
+        toppings.push({ x: p.x, y: p.y, type, size });
+      }
+
+      return toppings;
+    }
+
+    const GLOBAL_TOPPINGS = generateGlobalToppings();
+
+    // Shape drawing (outline + color)
+    function pepperoniOutline(g, x, y, r) {
       const c = makeSVG("circle");
       c.setAttribute("cx", x); c.setAttribute("cy", y); c.setAttribute("r", r);
       g.appendChild(c);
     }
-    function drawPepperoniColor(g, x, y, r) {
+    function pepperoniColor(g, x, y, r) {
       const c1 = makeSVG("circle");
       c1.setAttribute("cx", x); c1.setAttribute("cy", y); c1.setAttribute("r", r);
       c1.setAttribute("fill", "#b91c1c");
@@ -341,14 +357,14 @@
       g.appendChild(c1); g.appendChild(c2);
     }
 
-    function drawMushroomOutline(g, x, y, s) {
+    function mushroomOutline(g, x, y, s) {
       const cap = makeSVG("path");
       cap.setAttribute("d", `M ${x - s} ${y} Q ${x} ${y - s*0.95} ${x + s} ${y} Q ${x} ${y + s*0.2} ${x - s} ${y} Z`);
       const stem = makeSVG("path");
       stem.setAttribute("d", `M ${x - s*0.33} ${y} Q ${x} ${y + s*1.0} ${x + s*0.33} ${y} Z`);
       g.appendChild(cap); g.appendChild(stem);
     }
-    function drawMushroomColor(g, x, y, s) {
+    function mushroomColor(g, x, y, s) {
       const cap = makeSVG("path");
       cap.setAttribute("d", `M ${x - s} ${y} Q ${x} ${y - s*0.95} ${x + s} ${y} Q ${x} ${y + s*0.2} ${x - s} ${y} Z`);
       cap.setAttribute("fill", "#c7b299");
@@ -360,7 +376,7 @@
       g.appendChild(cap); g.appendChild(stem);
     }
 
-    function drawChunkOutline(g, x, y, s) {
+    function chunkOutline(g, x, y, s) {
       const p = makeSVG("path");
       p.setAttribute("d", `M ${x} ${y-s}
         Q ${x+s} ${y-s*0.2} ${x+s*0.55} ${y+s*0.75}
@@ -368,7 +384,7 @@
         Q ${x-s} ${y-s*0.2} ${x} ${y-s} Z`);
       g.appendChild(p);
     }
-    function drawChunkColor(g, x, y, s) {
+    function chunkColor(g, x, y, s) {
       const p = makeSVG("path");
       p.setAttribute("d", `M ${x} ${y-s}
         Q ${x+s} ${y-s*0.2} ${x+s*0.55} ${y+s*0.75}
@@ -379,148 +395,83 @@
       g.appendChild(p);
     }
 
-    // ===========================
-    // Placement with spacing
-    // ===========================
-    function placeNonOverlappingPoints(rnd, sliceIndex, count, minDist) {
-      const points = [];
-      const a1 = START_OFFSET + sliceIndex * STEP;
-      const a2 = START_OFFSET + (sliceIndex + 1) * STEP;
-
-      // Keep inside wedge with margins
-      const angMin = a1 + 0.18 * STEP;
-      const angMax = a2 - 0.18 * STEP;
-
-      // Keep inside cheese region (also respects wavy edge feel)
-      const radMin = R_INNER + 18;
-      const radMax = R_CHEESE_WAVY - 10;
-
-      let attempts = 0;
-      const maxAttempts = 420;
-
-      while (points.length < count && attempts < maxAttempts) {
-        attempts++;
-
-        const ang = angMin + rnd() * (angMax - angMin);
-
-        // sqrt distribution for uniform area
-        const t = rnd();
-        const rad = Math.sqrt(t) * (radMax - radMin) + radMin;
-
-        const x = CX + rad * Math.cos(ang);
-        const y = CY + rad * Math.sin(ang);
-
-        let ok = true;
-        for (const p of points) {
-          const dx = p.x - x, dy = p.y - y;
-          if ((dx*dx + dy*dy) < (minDist*minDist)) { ok = false; break; }
-        }
-        if (ok) points.push({ x, y });
-      }
-      return points;
+    function drawToppingOutline(g, t) {
+      if (t.type === "pepperoni") pepperoniOutline(g, t.x, t.y, t.size);
+      else if (t.type === "mushroom") mushroomOutline(g, t.x, t.y, t.size);
+      else chunkOutline(g, t.x, t.y, t.size);
     }
 
-    function buildToppingsForSlice(sliceIndex, clipId, filled) {
-      const outer = makeSVG("g");
-      outer.setAttribute("clip-path", `url(#${clipId})`);
-
-      // Sauce tint under cheese when filled
-      const sauceTint = makeSVG("path");
-      sauceTint.setAttribute("fill", "url(#sauceGradient)");
-      sauceTint.setAttribute("opacity", filled ? "0.18" : "0");
-      outer.appendChild(sauceTint);
-
-      // Outline group = coloring book
-      const outlineG = makeSVG("g");
-      outlineG.setAttribute("fill", "none");
-      outlineG.setAttribute("stroke", "#111");
-      outlineG.setAttribute("stroke-width", "1.7");
-      outlineG.setAttribute("opacity", filled ? "0" : "0.9");
-
-      // Color group
-      const colorG = makeSVG("g");
-      colorG.setAttribute("opacity", filled ? "1" : "0");
-
-      // Stable RNG per slice
-      const rnd = mulberry32(24680 + sliceIndex * 1009);
-
-      // Fewer items per slice = cleaner, more like reference
-      const itemCount = 4 + Math.floor(rnd() * 3); // 4–6
-      const pts = placeNonOverlappingPoints(rnd, sliceIndex, itemCount, 18);
-
-      for (let i = 0; i < pts.length; i++) {
-        const { x, y } = pts[i];
-        const roll = rnd();
-
-        if (roll < 0.55) {
-          const r = 7 + rnd() * 1.5;
-          drawPepperoniOutline(outlineG, x, y, r);
-          if (filled) drawPepperoniColor(colorG, x, y, r);
-        } else if (roll < 0.82) {
-          const s = 8 + rnd() * 2;
-          drawMushroomOutline(outlineG, x, y, s);
-          if (filled) drawMushroomColor(colorG, x, y, s);
-        } else {
-          const s = 5 + rnd() * 2;
-          drawChunkOutline(outlineG, x, y, s);
-          if (filled) drawChunkColor(colorG, x, y, s);
-        }
-      }
-
-      outer.appendChild(colorG);
-      outer.appendChild(outlineG);
-      return { group: outer, sauceTint };
+    function drawToppingColor(g, t) {
+      if (t.type === "pepperoni") pepperoniColor(g, t.x, t.y, t.size);
+      else if (t.type === "mushroom") mushroomColor(g, t.x, t.y, t.size);
+      else chunkColor(g, t.x, t.y, t.size);
     }
 
     // ===========================
     // Render
     // ===========================
+    function updateCountDisplay() {
+      const filledCount = states.filter(Boolean).length;
+      filledCountSpan.textContent = filledCount;
+      return filledCount;
+    }
+
     function render() {
       dynDefs.textContent = "";
-      slicesLayer.textContent = "";
-      dividersLayer.textContent = "";
+      sliceBaseLayer.textContent = "";
+      coloredToppingsLayer.textContent = "";
+      outlineLayer.textContent = "";
+      dividerLayer.textContent = "";
+      hitLayer.textContent = "";
 
-      // unified underlay (draw once per render)
-      drawUnderlay();
-
+      // 1) Slice clipPaths + base fills
       for (let i = 0; i < NUM_SLICES; i++) {
         const a1 = START_OFFSET + i * STEP;
         const a2 = START_OFFSET + (i + 1) * STEP;
 
-        // Clip path
+        // clipPath for this slice
         const clipId = `clip_slice_${i}`;
         const clip = makeSVG("clipPath");
         clip.setAttribute("id", clipId);
         const clipShape = makeSVG("path");
-        clipShape.setAttribute("d", wedgePath(R_OUTER, R_INNER, a1, a2));
+        clipShape.setAttribute("d", wedgePathPointCenter(R_PIZZA, a1, a2));
         clip.appendChild(clipShape);
         dynDefs.appendChild(clip);
 
-        const sliceGroup = makeSVG("g");
-        sliceGroup.setAttribute("data-index", String(i));
-
-        // Base wedge
+        // base fill wedge (white vs cheese)
         const base = makeSVG("path");
-        base.setAttribute("d", wedgePath(R_OUTER, R_INNER, a1, a2));
+        base.setAttribute("d", wedgePathPointCenter(R_PIZZA, a1, a2));
         base.setAttribute("fill", states[i] ? "url(#cheeseGradient)" : "white");
-        base.setAttribute("stroke", "black");
-        base.setAttribute("stroke-width", "1.5");
-        base.setAttribute("stroke-linejoin", "round");
-        base.setAttribute("clip-path", `url(#${clipId})`);
-        sliceGroup.appendChild(base);
+        base.setAttribute("stroke", "none");
+        sliceBaseLayer.appendChild(base);
 
-        // Toppings
-        const toppings = buildToppingsForSlice(i, clipId, states[i]);
-        toppings.sauceTint.setAttribute("d", wedgePath(R_OUTER, R_INNER, a1, a2));
-        sliceGroup.appendChild(toppings.group);
+        // colored toppings for this slice (clipped)
+        if (states[i]) {
+          const coloredGroup = makeSVG("g");
+          coloredGroup.setAttribute("clip-path", `url(#${clipId})`);
 
-        // Tap target
+          // subtle sauce tint under toppings
+          const sauce = makeSVG("path");
+          sauce.setAttribute("d", wedgePathPointCenter(R_PIZZA, a1, a2));
+          sauce.setAttribute("fill", "url(#sauceGradient)");
+          sauce.setAttribute("opacity", "0.14");
+          coloredGroup.appendChild(sauce);
+
+          // draw ALL global toppings (only the part in this slice will show due to clip)
+          for (const t of GLOBAL_TOPPINGS) {
+            drawToppingColor(coloredGroup, t);
+          }
+
+          coloredToppingsLayer.appendChild(coloredGroup);
+        }
+
+        // tap target
         const hit = makeSVG("path");
-        hit.setAttribute("d", wedgePath(R_OUTER, R_INNER, a1, a2));
+        hit.setAttribute("d", wedgePathPointCenter(R_PIZZA, a1, a2));
         hit.setAttribute("class", "slice-hit");
-        hit.setAttribute("aria-label", `Slice ${i + 1}`);
         hit.setAttribute("role", "button");
         hit.setAttribute("tabindex", "0");
+        hit.setAttribute("aria-label", `Slice ${i + 1}`);
 
         const toggle = () => {
           states[i] = !states[i];
@@ -536,54 +487,84 @@
           if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
         });
 
-        sliceGroup.appendChild(hit);
-        slicesLayer.appendChild(sliceGroup);
+        hitLayer.appendChild(hit);
 
-        // Divider
-        const { pOuter, pInner } = dividerLine(a1);
+        // divider lines (center to crust)
+        const pOuter = polarToXY(R_PIZZA, a1);
         const line = makeSVG("line");
-        line.setAttribute("x1", pInner.x);
-        line.setAttribute("y1", pInner.y);
-        line.setAttribute("x2", pOuter.x);
-        line.setAttribute("y2", pOuter.y);
-        line.setAttribute("stroke", "black");
-        line.setAttribute("stroke-width", "1.2");
-        line.setAttribute("opacity", "0.55");
-        dividersLayer.appendChild(line);
+        line.setAttribute("x1", CX); line.setAttribute("y1", CY);
+        line.setAttribute("x2", pOuter.x); line.setAttribute("y2", pOuter.y);
+        line.setAttribute("stroke", "#111");
+        line.setAttribute("stroke-width", "1.6");
+        line.setAttribute("opacity", "0.8");
+        dividerLayer.appendChild(line);
       }
 
-      // Last divider
-      const lastA = START_OFFSET + NUM_SLICES * STEP;
-      const { pOuter, pInner } = dividerLine(lastA);
-      const lastLine = makeSVG("line");
-      lastLine.setAttribute("x1", pInner.x);
-      lastLine.setAttribute("y1", pInner.y);
-      lastLine.setAttribute("x2", pOuter.x);
-      lastLine.setAttribute("y2", pOuter.y);
-      lastLine.setAttribute("stroke", "black");
-      lastLine.setAttribute("stroke-width", "1.2");
-      lastLine.setAttribute("opacity", "0.55");
-      dividersLayer.appendChild(lastLine);
+      // 2) Global coloring-page outline ON TOP (single unified drawing)
+      // crust rings
+      const crustOuter = makeSVG("circle");
+      crustOuter.setAttribute("cx", CX);
+      crustOuter.setAttribute("cy", CY);
+      crustOuter.setAttribute("r", R_CRUST_OUT);
+      crustOuter.setAttribute("fill", "none");
+      crustOuter.setAttribute("stroke", "#111");
+      crustOuter.setAttribute("stroke-width", "1.6");
+      crustOuter.setAttribute("opacity", "0.95");
+      outlineLayer.appendChild(crustOuter);
+
+      const crustInner = makeSVG("circle");
+      crustInner.setAttribute("cx", CX);
+      crustInner.setAttribute("cy", CY);
+      crustInner.setAttribute("r", R_CRUST_IN);
+      crustInner.setAttribute("fill", "none");
+      crustInner.setAttribute("stroke", "#111");
+      crustInner.setAttribute("stroke-width", "1.4");
+      crustInner.setAttribute("opacity", "0.90");
+      outlineLayer.appendChild(crustInner);
+
+      // wavy cheese edge
+      const cheeseEdge = makeSVG("path");
+      cheeseEdge.setAttribute("d", buildWavyCheeseEdgePath(R_CHEESE_WAVY, 10));
+      cheeseEdge.setAttribute("fill", "none");
+      cheeseEdge.setAttribute("stroke", "#111");
+      cheeseEdge.setAttribute("stroke-width", "1.4");
+      cheeseEdge.setAttribute("opacity", "0.90");
+      outlineLayer.appendChild(cheeseEdge);
+
+      // global topping outlines
+      const toppingOutlineG = makeSVG("g");
+      toppingOutlineG.setAttribute("fill", "none");
+      toppingOutlineG.setAttribute("stroke", "#111");
+      toppingOutlineG.setAttribute("stroke-width", "1.7");
+      toppingOutlineG.setAttribute("opacity", "0.92");
+
+      for (const t of GLOBAL_TOPPINGS) {
+        drawToppingOutline(toppingOutlineG, t);
+      }
+      outlineLayer.appendChild(toppingOutlineG);
+
+      // pizza rim outline for the cheese circle boundary
+      const cheeseBoundary = makeSVG("circle");
+      cheeseBoundary.setAttribute("cx", CX);
+      cheeseBoundary.setAttribute("cy", CY);
+      cheeseBoundary.setAttribute("r", R_PIZZA);
+      cheeseBoundary.setAttribute("fill", "none");
+      cheeseBoundary.setAttribute("stroke", "#111");
+      cheeseBoundary.setAttribute("stroke-width", "1.4");
+      cheeseBoundary.setAttribute("opacity", "0.90");
+      outlineLayer.appendChild(cheeseBoundary);
     }
 
     // ===========================
-    // UI / Completion / Confetti
+    // Completion + Buttons
     // ===========================
-    function updateCountDisplay() {
-      const filledCount = states.filter(Boolean).length;
-      filledCountSpan.textContent = filledCount;
-      return filledCount;
-    }
-
     function checkCompletion() {
       if (states.every(Boolean)) showCompletionModal();
     }
-
     function showCompletionModal() {
       completionModal.classList.add("show");
       triggerConfetti();
     }
-
     function closeModal() { completionModal.classList.remove("show"); }
 
     function resetPizza() {
@@ -593,7 +574,6 @@
       closeModal();
       render();
     }
-
     function fillAllSlices() {
       states = Array(NUM_SLICES).fill(true);
       saveSliceStates(states);
