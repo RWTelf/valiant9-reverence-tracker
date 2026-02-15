@@ -142,9 +142,10 @@
         </g>
 
         <!-- Layers -->
-        <g id="sliceBaseLayer"></g>
-        <g id="coloredPepperoniLayer"></g>
-        <g id="outlineLayer"></g>
+        <g id="sliceBaseLayer"></g>          <!-- white or cheese per slice -->
+        <g id="unfilledPepperoniLayer"></g>  <!-- white-filled pepperoni only for unfilled slices -->
+        <g id="coloredPepperoniLayer"></g>   <!-- red pepperoni only for filled slices -->
+        <g id="outlineLayer"></g>            <!-- coloring-page outlines (stroke only) -->
         <g id="dividerLayer"></g>
         <g id="hitLayer"></g>
       </svg>
@@ -170,9 +171,12 @@
   </div>
 
   <script>
+    // ===========================
+    // Constants & State
+    // ===========================
     const NUM_SLICES = 10;
     const PEPPERONI_PER_SLICE = 3;
-    const STORAGE_KEY = "pizzaSliceStates_pepperoni_v2";
+    const STORAGE_KEY = "pizzaSliceStates_pepperoni_final";
 
     const CX = 100, CY = 100;
     const R_PIZZA = 84;
@@ -183,8 +187,10 @@
     const R_CRUST_OUT = 95;
     const R_CRUST_IN  = 84;
 
+    // DOM
     const dynDefs = document.getElementById("dynDefs");
     const sliceBaseLayer = document.getElementById("sliceBaseLayer");
+    const unfilledPepperoniLayer = document.getElementById("unfilledPepperoniLayer");
     const coloredPepperoniLayer = document.getElementById("coloredPepperoniLayer");
     const outlineLayer = document.getElementById("outlineLayer");
     const dividerLayer = document.getElementById("dividerLayer");
@@ -207,12 +213,14 @@
       }
       return Array(NUM_SLICES).fill(false);
     }
-    function saveSliceStates(states) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(states));
-    }
+    function saveSliceStates(states) { localStorage.setItem(STORAGE_KEY, JSON.stringify(states)); }
+
     let states = loadSliceStates();
     let wasAllFilled = states.every(Boolean);
 
+    // ===========================
+    // SVG helpers
+    // ===========================
     function makeSVG(tag) { return document.createElementNS("http://www.w3.org/2000/svg", tag); }
     function polarToXY(r, a) { return { x: CX + r * Math.cos(a), y: CY + r * Math.sin(a) }; }
 
@@ -223,6 +231,9 @@
       return `M ${CX} ${CY} L ${p1.x} ${p1.y} A ${rOuter} ${rOuter} 0 ${largeArc} 1 ${p2.x} ${p2.y} Z`;
     }
 
+    // ===========================
+    // Deterministic RNG
+    // ===========================
     function mulberry32(seed) {
       return function() {
         let t = seed += 0x6D2B79F5;
@@ -249,38 +260,38 @@
       return d + " Z";
     }
 
-    function pepperoniOutline(g, x, y, r) {
+    // ===========================
+    // Pepperoni drawing
+    // ===========================
+    function pepperoniCircle(g, x, y, r, fill, stroke, strokeWidth) {
       const c = makeSVG("circle");
       c.setAttribute("cx", x); c.setAttribute("cy", y); c.setAttribute("r", r);
+      if (fill !== null) c.setAttribute("fill", fill);
+      if (stroke) c.setAttribute("stroke", stroke);
+      if (strokeWidth) c.setAttribute("stroke-width", strokeWidth);
       g.appendChild(c);
     }
 
     function pepperoniColor(g, x, y, r) {
-      const c1 = makeSVG("circle");
-      c1.setAttribute("cx", x); c1.setAttribute("cy", y); c1.setAttribute("r", r);
-      c1.setAttribute("fill", "#b91c1c");
-      c1.setAttribute("opacity", "0.98");
-
-      const c2 = makeSVG("circle");
-      c2.setAttribute("cx", x); c2.setAttribute("cy", y); c2.setAttribute("r", r * 0.62);
-      c2.setAttribute("fill", "#7f1d1d");
-      c2.setAttribute("opacity", "0.22");
-
-      g.appendChild(c1); g.appendChild(c2);
+      // add a subtle stroke so red pepperoni looks clean against cheese
+      pepperoniCircle(g, x, y, r, "#b91c1c", "#111", "0.8");
+      pepperoniCircle(g, x, y, r * 0.62, "rgba(127,29,29,0.22)", null, null);
     }
 
+    // ===========================
+    // Non-overlapping distribution
+    // ===========================
     function distance(a, b) {
       const dx = a.x - b.x, dy = a.y - b.y;
       return Math.sqrt(dx*dx + dy*dy);
     }
 
-    // True non-overlap: dist >= (r1 + r2 + gap)
     function generatePepperoniPositions() {
       const rnd = mulberry32(909090);
       const positions = [];
 
-      const gap = 2.2;                 // extra breathing room
-      const maxAttemptsPerPep = 1200;  // raise attempts to guarantee placements
+      const gap = 2.6;                  // a little more breathing room
+      const maxAttemptsPerPep = 1400;
 
       for (let slice = 0; slice < NUM_SLICES; slice++) {
         const a1 = START_OFFSET + slice * STEP;
@@ -301,7 +312,7 @@
             const rad = Math.sqrt(t) * (rMax - rMin) + rMin;
 
             const p = polarToXY(rad, ang);
-            const rPep = 7.2 + rnd() * 1.2;
+            const rPep = 7.2 + rnd() * 1.1;
 
             let ok = true;
             for (const e of positions) {
@@ -315,25 +326,24 @@
             }
           }
 
-          // fallback (very rare)
           if (!placed) {
             const midAng = (angMin + angMax) / 2;
             const rad = rMin + (k + 1) * ((rMax - rMin) / (PEPPERONI_PER_SLICE + 1));
             const p = polarToXY(rad, midAng);
-            positions.push({ x: p.x, y: p.y, r: 7.6, slice });
+            positions.push({ x: p.x, y: p.y, r: 7.4, slice });
           }
         }
       }
-
       return positions;
     }
 
     const PEPPERONI_POSITIONS = generatePepperoniPositions();
 
     // ===========================
-    // Louder / longer trumpet fanfare (WebAudio synth)
+    // Audio (iPad unlock + louder longer fanfare)
     // ===========================
     let audioCtx = null;
+    let audioUnlocked = false;
 
     function ensureAudioContext() {
       if (!audioCtx) {
@@ -345,60 +355,86 @@
       }
     }
 
+    // Call this on ANY user gesture once, so iOS will allow sound later.
+    function unlockAudio() {
+      if (audioUnlocked) return;
+      ensureAudioContext();
+
+      // play a near-silent click to unlock
+      try {
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(440, now);
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(0.00001, now + 0.02);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.02);
+      } catch (_) {}
+
+      audioUnlocked = true;
+    }
+
     function midiToFreq(m) { return 440 * Math.pow(2, (m - 69) / 12); }
 
     function playFanfare() {
-      ensureAudioContext();
+      unlockAudio(); // ensure iOS is unlocked
+
       const now = audioCtx.currentTime;
 
-      // Longer fanfare: C major-ish, triumphant
       const phrase = [
         { m: 72, t: 0.00, d: 0.22 }, // C5
         { m: 76, t: 0.24, d: 0.22 }, // E5
         { m: 79, t: 0.48, d: 0.26 }, // G5
-        { m: 84, t: 0.78, d: 0.40 }, // C6
-        { m: 83, t: 1.22, d: 0.22 }, // B5
-        { m: 84, t: 1.46, d: 0.30 }, // C6
-        { m: 79, t: 1.82, d: 0.22 }, // G5
-        { m: 76, t: 2.06, d: 0.22 }, // E5
-        { m: 72, t: 2.30, d: 0.46 }, // C5 (hold)
+        { m: 84, t: 0.78, d: 0.42 }, // C6
+        { m: 83, t: 1.24, d: 0.22 }, // B5
+        { m: 84, t: 1.48, d: 0.34 }, // C6
+        { m: 79, t: 1.88, d: 0.24 }, // G5
+        { m: 76, t: 2.14, d: 0.24 }, // E5
+        { m: 72, t: 2.40, d: 0.55 }, // C5 hold
       ];
 
-      // master envelope (louder + longer)
+      // compressor to keep it loud but not harsh
+      const comp = audioCtx.createDynamicsCompressor();
+      comp.threshold.setValueAtTime(-18, now);
+      comp.knee.setValueAtTime(18, now);
+      comp.ratio.setValueAtTime(6, now);
+      comp.attack.setValueAtTime(0.006, now);
+      comp.release.setValueAtTime(0.16, now);
+      comp.connect(audioCtx.destination);
+
       const master = audioCtx.createGain();
       master.gain.setValueAtTime(0.0001, now);
-      master.gain.exponentialRampToValueAtTime(1.25, now + 0.05);   // louder
-      master.gain.exponentialRampToValueAtTime(0.001, now + 3.4);   // longer tail
-      master.connect(audioCtx.destination);
+      master.gain.exponentialRampToValueAtTime(1.7, now + 0.05); // louder
+      master.gain.exponentialRampToValueAtTime(0.001, now + 3.8); // longer tail
+      master.connect(comp);
 
-      // mild "brass" filter
       const filter = audioCtx.createBiquadFilter();
       filter.type = "lowpass";
-      filter.frequency.setValueAtTime(2200, now);
-      filter.Q.setValueAtTime(0.8, now);
+      filter.frequency.setValueAtTime(2400, now);
+      filter.Q.setValueAtTime(0.85, now);
       filter.connect(master);
 
-      // vibrato
       const vibratoOsc = audioCtx.createOscillator();
       vibratoOsc.type = "sine";
       vibratoOsc.frequency.setValueAtTime(5.2, now);
 
       const vibratoGain = audioCtx.createGain();
-      vibratoGain.gain.setValueAtTime(10, now); // vibrato depth (Hz)
-
+      vibratoGain.gain.setValueAtTime(11, now);
       vibratoOsc.connect(vibratoGain);
 
-      // two-voice brass: main + octave-down support
-      function scheduleVoice(semitoneOffset, level) {
+      function scheduleVoice(semitoneOffset, level, type) {
         for (const n of phrase) {
           const start = now + n.t;
           const end = start + n.d;
 
           const osc = audioCtx.createOscillator();
-          osc.type = "sawtooth";
+          osc.type = type;
           osc.frequency.setValueAtTime(midiToFreq(n.m + semitoneOffset), start);
 
-          // vibrato into freq
           vibratoGain.connect(osc.frequency);
 
           const g = audioCtx.createGain();
@@ -414,13 +450,18 @@
         }
       }
 
-      scheduleVoice(0, 0.70);    // main voice
-      scheduleVoice(-12, 0.38);  // octave down
+      // brass-ish stack
+      scheduleVoice(0, 0.78, "sawtooth");
+      scheduleVoice(-12, 0.42, "sawtooth");
+      scheduleVoice(0, 0.18, "square"); // adds bite
 
       vibratoOsc.start(now);
-      vibratoOsc.stop(now + 3.5);
+      vibratoOsc.stop(now + 4.0);
     }
 
+    // ===========================
+    // Render / UI
+    // ===========================
     function updateCountDisplay() {
       const filledCount = states.filter(Boolean).length;
       filledCountSpan.textContent = filledCount;
@@ -430,6 +471,7 @@
     function render() {
       dynDefs.textContent = "";
       sliceBaseLayer.textContent = "";
+      unfilledPepperoniLayer.textContent = "";
       coloredPepperoniLayer.textContent = "";
       outlineLayer.textContent = "";
       dividerLayer.textContent = "";
@@ -447,12 +489,25 @@
         clip.appendChild(clipShape);
         dynDefs.appendChild(clip);
 
+        // base fill
         const base = makeSVG("path");
         base.setAttribute("d", wedgePathPointCenter(R_PIZZA, a1, a2));
         base.setAttribute("fill", states[i] ? "url(#cheeseGradient)" : "white");
         base.setAttribute("stroke", "none");
         sliceBaseLayer.appendChild(base);
 
+        // UNFILLED: draw white-filled pepperoni within this slice (so it looks like a coloring page)
+        if (!states[i]) {
+          const g = makeSVG("g");
+          g.setAttribute("clip-path", `url(#${clipId})`);
+          for (const p of PEPPERONI_POSITIONS) {
+            // white fill + black outline
+            pepperoniCircle(g, p.x, p.y, p.r, "white", "#111", "1.7");
+          }
+          unfilledPepperoniLayer.appendChild(g);
+        }
+
+        // FILLED: draw colored pepperoni within this slice
         if (states[i]) {
           const coloredGroup = makeSVG("g");
           coloredGroup.setAttribute("clip-path", `url(#${clipId})`);
@@ -469,6 +524,7 @@
           coloredPepperoniLayer.appendChild(coloredGroup);
         }
 
+        // divider line
         const pOuter = polarToXY(R_PIZZA, a1);
         const line = makeSVG("line");
         line.setAttribute("x1", CX); line.setAttribute("y1", CY);
@@ -478,6 +534,7 @@
         line.setAttribute("opacity", "0.75");
         dividerLayer.appendChild(line);
 
+        // tap target
         const hit = makeSVG("path");
         hit.setAttribute("d", wedgePathPointCenter(R_PIZZA, a1, a2));
         hit.setAttribute("class", "slice-hit");
@@ -486,7 +543,7 @@
         hit.setAttribute("aria-label", `Slice ${i + 1}`);
 
         const toggle = () => {
-          ensureAudioContext();
+          unlockAudio();
           states[i] = !states[i];
           saveSliceStates(states);
           updateCountDisplay();
@@ -502,7 +559,7 @@
         hitLayer.appendChild(hit);
       }
 
-      // Global outline (coloring page)
+      // Global outline (stroke-only, like a coloring page)
       const crustOuter = makeSVG("circle");
       crustOuter.setAttribute("cx", CX);
       crustOuter.setAttribute("cy", CY);
@@ -541,27 +598,29 @@
       cheeseBoundary.setAttribute("opacity", "0.90");
       outlineLayer.appendChild(cheeseBoundary);
 
-      // Pepperoni outlines as WHITE-FILLED circles (so overlaps never look transparent)
-      const pepOutlineG = makeSVG("g");
-      pepOutlineG.setAttribute("fill", "white");
-      pepOutlineG.setAttribute("stroke", "#111");
-      pepOutlineG.setAttribute("stroke-width", "1.7");
-      pepOutlineG.setAttribute("opacity", "0.95");
+      // pepperoni outline stroke-only on top (keeps the “coloring page” look without blocking red)
+      const pepStrokeG = makeSVG("g");
+      pepStrokeG.setAttribute("fill", "none");
+      pepStrokeG.setAttribute("stroke", "#111");
+      pepStrokeG.setAttribute("stroke-width", "1.7");
+      pepStrokeG.setAttribute("opacity", "0.92");
 
       for (const p of PEPPERONI_POSITIONS) {
-        pepperoniOutline(pepOutlineG, p.x, p.y, p.r);
+        const c = makeSVG("circle");
+        c.setAttribute("cx", p.x);
+        c.setAttribute("cy", p.y);
+        c.setAttribute("r", p.r);
+        pepStrokeG.appendChild(c);
       }
-      outlineLayer.appendChild(pepOutlineG);
+      outlineLayer.appendChild(pepStrokeG);
     }
 
     function checkCompletion(fromUserGesture) {
       const allFilled = states.every(Boolean);
-
       if (allFilled && !wasAllFilled && fromUserGesture) {
         playFanfare();
       }
       wasAllFilled = allFilled;
-
       if (allFilled) showCompletionModal();
     }
 
@@ -573,7 +632,7 @@
     function closeModal() { completionModal.classList.remove("show"); }
 
     function resetPizza() {
-      ensureAudioContext();
+      unlockAudio();
       states = Array(NUM_SLICES).fill(false);
       saveSliceStates(states);
       wasAllFilled = false;
@@ -583,7 +642,7 @@
     }
 
     function fillAllSlices() {
-      ensureAudioContext();
+      unlockAudio();
       const was = states.every(Boolean);
       states = Array(NUM_SLICES).fill(true);
       saveSliceStates(states);
@@ -597,6 +656,10 @@
     btnFill.addEventListener("click", fillAllSlices);
     btnClose.addEventListener("click", closeModal);
     btnResetModal.addEventListener("click", resetPizza);
+
+    // Extra iOS safety: unlock on first interaction anywhere
+    window.addEventListener("pointerdown", unlockAudio, { once: true });
+    window.addEventListener("touchstart", unlockAudio, { once: true, passive: true });
 
     function triggerConfetti() {
       document.querySelectorAll(".confetti").forEach(el => el.remove());
