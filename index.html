@@ -22,7 +22,7 @@
       margin: 0;
       padding: 0;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -46,8 +46,9 @@
       font-size: 28px;
       font-weight: 700;
       margin: 0;
-      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      text-shadow: 0 2px 10px rgba(0,0,0,0.2);
       text-align: center;
+      line-height: 1.15;
     }
 
     .pizza-container {
@@ -64,14 +65,14 @@
       touch-action: manipulation;
     }
 
-    /* The actual tap target is a separate path (slice-hit), because Safari can be picky */
+    /* Tap target overlay (separate from visuals to keep iPad Safari happy) */
     .slice-hit {
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
       pointer-events: all;
-      fill: rgba(0,0,0,0.001); /* invisible but "painted" so it receives taps */
+      fill: rgba(0,0,0,0.001);  /* invisible but "painted" => tappable in Safari */
       stroke: rgba(0,0,0,0.001);
-      stroke-width: 18;        /* fat tap target */
+      stroke-width: 18;
       paint-order: stroke fill;
     }
 
@@ -79,7 +80,7 @@
       color: white;
       font-size: 18px;
       font-weight: 600;
-      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      text-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
 
     .button-group {
@@ -92,7 +93,7 @@
     button {
       padding: 14px 28px;
       font-size: 16px;
-      font-weight: 600;
+      font-weight: 700;
       border: none;
       border-radius: 12px;
       cursor: pointer;
@@ -107,7 +108,6 @@
       color: white;
       box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
     }
-
     #btnReset:active {
       transform: scale(0.97);
       box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
@@ -118,33 +118,28 @@
       color: white;
       box-shadow: 0 4px 15px rgba(81, 207, 102, 0.3);
     }
-
     #btnFill:active {
       transform: scale(0.97);
       box-shadow: 0 2px 8px rgba(81, 207, 102, 0.3);
     }
 
-    /* Modal Styles */
+    /* Modal */
     .modal-overlay {
       display: none;
       position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.7);
+      inset: 0;
+      background: rgba(0,0,0,0.7);
       z-index: 1000;
       align-items: center;
       justify-content: center;
       padding: 20px;
       animation: fadeIn 0.3s ease;
     }
-
     .modal-overlay.show { display: flex; }
 
     @keyframes fadeIn {
       from { opacity: 0; }
-      to { opacity: 1; }
+      to   { opacity: 1; }
     }
 
     .modal-content {
@@ -152,8 +147,9 @@
       border-radius: 20px;
       padding: 40px 30px;
       text-align: center;
-      max-width: 400px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 420px;
+      width: min(420px, 92vw);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
       animation: slideUp 0.4s ease;
       position: relative;
       z-index: 1001;
@@ -165,26 +161,24 @@
     }
 
     .modal-content h2 {
-      font-size: 36px;
+      font-size: 34px;
       margin: 0 0 10px 0;
       color: #333;
+      line-height: 1.1;
     }
-
     .modal-content .celebration-text {
-      font-size: 24px;
-      margin: 20px 0;
+      font-size: 22px;
+      margin: 18px 0;
       color: #555;
     }
-
-    .modal-content .button-group { margin-top: 30px; }
-    .modal-content button { min-width: 140px; }
+    .modal-content .button-group { margin-top: 26px; }
+    .modal-content button { min-width: 150px; }
 
     #btnClose {
       background-color: #4c6ef5;
       color: white;
       box-shadow: 0 4px 15px rgba(76, 110, 245, 0.3);
     }
-
     #btnClose:active {
       transform: scale(0.97);
       box-shadow: 0 2px 8px rgba(76, 110, 245, 0.3);
@@ -195,13 +189,12 @@
       color: white;
       box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
     }
-
     #btnResetModal:active {
       transform: scale(0.97);
       box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
     }
 
-    /* Confetti Animation */
+    /* Confetti */
     .confetti {
       position: fixed;
       pointer-events: none;
@@ -222,7 +215,7 @@
     <h1>🎉 Reverence Party Progress<br>Valiant 9</h1>
 
     <div class="pizza-container">
-      <svg id="pizzaSvg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-label="Pizza progress tracker" role="img">
+      <svg id="pizzaSvg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pizza progress tracker">
         <defs>
           <!-- Gradients -->
           <radialGradient id="cheeseGradient" cx="40%" cy="40%">
@@ -245,8 +238,8 @@
             <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#000" flood-opacity="0.18" />
           </filter>
 
-          <!-- Dynamic clipPaths will be injected here -->
-          <defs id="dynDefs"></defs>
+          <!-- Dynamic clipPaths injected here (use <g>, NOT nested <defs>) -->
+          <g id="dynDefs"></g>
         </defs>
 
         <!-- Plate -->
@@ -258,10 +251,10 @@
           <circle cx="100" cy="100" r="84" fill="url(#sauceGradient)"></circle>
         </g>
 
-        <!-- Slices are generated here -->
+        <!-- Slices -->
         <g id="slicesLayer"></g>
 
-        <!-- Divider lines (for “cut” look) -->
+        <!-- Dividers -->
         <g id="dividersLayer"></g>
 
         <!-- Center highlight -->
@@ -269,9 +262,7 @@
       </svg>
     </div>
 
-    <div class="counter">
-      <span id="filledCount">0</span> / 10 slices
-    </div>
+    <div class="counter"><span id="filledCount">0</span> / 10 slices</div>
 
     <div class="button-group">
       <button id="btnReset">Reset</button>
@@ -296,12 +287,16 @@
     // Constants & State
     // ===========================
     const NUM_SLICES = 10;
-    const STORAGE_KEY = "pizzaSliceStates_v2";
+    const STORAGE_KEY = "pizzaSliceStates_v3";
 
     // SVG geometry
     const CX = 100, CY = 100;
-    const R_OUTER = 84;   // cheese/sauce edge
-    const R_INNER = 12;   // small center circle so wedges don't get too pointy
+    const R_OUTER = 84;   // cheese edge
+    const R_INNER = 12;   // small center to avoid super pointy wedge
+
+    // Must match slice orientation in render()
+    const START_OFFSET = -Math.PI / 2;
+    const STEP = (2 * Math.PI) / NUM_SLICES;
 
     // ===========================
     // DOM Elements
@@ -349,7 +344,6 @@
     }
 
     function wedgePath(rOuter, rInner, startAngle, endAngle) {
-      // 0 rad points right; we want "slice 0" starting at top => rotate by -90deg later in startOffset
       const p1 = polarToXY(CX, CY, rOuter, startAngle);
       const p2 = polarToXY(CX, CY, rOuter, endAngle);
       const p3 = polarToXY(CX, CY, rInner, endAngle);
@@ -371,7 +365,7 @@
       return { pOuter, pInner };
     }
 
-    // Deterministic RNG so toppings stay consistent for each slice
+    // Deterministic RNG so toppings don't jump around per slice
     function mulberry32(seed) {
       return function() {
         let t = seed += 0x6D2B79F5;
@@ -435,7 +429,6 @@
       p.setAttribute("stroke-linecap", "round");
       p.setAttribute("opacity", "0.9");
       p.setAttribute("transform", `rotate(${rotDeg} ${x} ${y})`);
-
       g.appendChild(p);
     }
 
@@ -462,28 +455,39 @@
       const outer = makeSVG("g");
       outer.setAttribute("clip-path", `url(#${clipId})`);
 
-      // two layers: outline for empty, color for filled
+      // Outline group (coloring book)
       const outlineG = makeSVG("g");
-      const colorG = makeSVG("g");
-
-      // Outline style
       outlineG.setAttribute("fill", "none");
       outlineG.setAttribute("stroke", "#111");
-      outlineG.setAttribute("stroke-width", "1.1");
-      outlineG.setAttribute("opacity", "0.9");
+      outlineG.setAttribute("stroke-width", "1.6");
+      outlineG.setAttribute("opacity", filled ? "0" : "0.75");
 
-      // color group visibility
+      // Color group (only visible when filled)
+      const colorG = makeSVG("g");
       colorG.setAttribute("opacity", filled ? "1" : "0");
 
-      // deterministic random per slice so toppings don't jump around
+      // Deterministic random per slice so toppings don't jump around
       const rnd = mulberry32(20260215 + sliceIndex * 999);
 
-      // make 3-5 toppings per slice
-      const toppingCount = 3 + Math.floor(rnd() * 3);
+      // subtle sauce tint under cheese when filled (helps look like pizza)
+      const sauceTint = makeSVG("path");
+      sauceTint.setAttribute("fill", "url(#sauceGradient)");
+      sauceTint.setAttribute("opacity", filled ? "0.20" : "0");
+      outer.appendChild(sauceTint);
+
+      // 4–6 toppings per slice
+      const toppingCount = 4 + Math.floor(rnd() * 3);
 
       for (let k = 0; k < toppingCount; k++) {
-        const ang = (sliceIndex + rnd()) * (2 * Math.PI / NUM_SLICES);
-        const rad = (R_INNER + 18) + rnd() * (R_OUTER - (R_INNER + 26));
+        // IMPORTANT FIX:
+        // Place toppings using the SAME angle system as the slice wedge (START_OFFSET + STEP * index)
+        const ang = START_OFFSET + (sliceIndex + rnd()) * STEP;
+
+        // pick a radius away from center so toppings don't stack on the hub
+        const radMin = R_INNER + 18;
+        const radMax = R_OUTER - 18;
+        const rad = radMin + rnd() * (radMax - radMin);
+
         const x = CX + rad * Math.cos(ang);
         const y = CY + rad * Math.sin(ang);
 
@@ -496,22 +500,27 @@
           const c = makeSVG("circle");
           c.setAttribute("cx", x); c.setAttribute("cy", y); c.setAttribute("r", r);
           outlineG.appendChild(c);
+
         } else if (roll < 0.65) {
           // olive
           const r = 3.6 + rnd() * 2.0;
           if (filled) addOlive(colorG, x, y, r);
+
           const c1 = makeSVG("circle");
           c1.setAttribute("cx", x); c1.setAttribute("cy", y); c1.setAttribute("r", r);
           outlineG.appendChild(c1);
+
           const c2 = makeSVG("circle");
           c2.setAttribute("cx", x); c2.setAttribute("cy", y); c2.setAttribute("r", r * 0.45);
           outlineG.appendChild(c2);
+
         } else if (roll < 0.85) {
           // pepper strip
           const w = 14 + rnd() * 10;
           const h = 10 + rnd() * 8;
           const rot = -30 + rnd() * 60;
           if (filled) addPepper(colorG, x, y, w, h, rot);
+
           const p = makeSVG("path");
           const x1 = x, y1 = y;
           const x2 = x + w, y2 = y + h * 0.1;
@@ -520,6 +529,7 @@
           p.setAttribute("d", `M ${x1} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2} ${y2}`);
           p.setAttribute("transform", `rotate(${rot} ${x} ${y})`);
           outlineG.appendChild(p);
+
         } else {
           // mushroom
           const s = 6.5 + rnd() * 3.5;
@@ -538,16 +548,9 @@
         }
       }
 
-      // sauce tint only when filled (subtle)
-      const sauceTint = makeSVG("path");
-      sauceTint.setAttribute("d", wedgePath(R_OUTER, R_INNER, 0, 0.0001)); // placeholder overwritten by caller
-      sauceTint.setAttribute("fill", "url(#sauceGradient)");
-      sauceTint.setAttribute("opacity", filled ? "0.22" : "0");
-      outer.appendChild(sauceTint);
-
-      // assemble
-      if (!filled) outer.appendChild(outlineG);
       outer.appendChild(colorG);
+      outer.appendChild(outlineG);
+
       return { group: outer, sauceTint };
     }
 
@@ -555,22 +558,20 @@
     // Rendering
     // ===========================
     function render() {
-      // Clear layers safely
+      // Clear layers
       dynDefs.textContent = "";
       slicesLayer.textContent = "";
       dividersLayer.textContent = "";
 
-      const startOffset = -Math.PI / 2; // start at top
-      const step = (2 * Math.PI) / NUM_SLICES;
-
       for (let i = 0; i < NUM_SLICES; i++) {
-        const a1 = startOffset + i * step;
-        const a2 = startOffset + (i + 1) * step;
+        const a1 = START_OFFSET + i * STEP;
+        const a2 = START_OFFSET + (i + 1) * STEP;
 
-        // Create clipPath for this slice (arc wedge => perfect circle)
+        // Clip path per slice (arc wedge => perfect circle)
         const clipId = `clip_slice_${i}`;
         const clip = makeSVG("clipPath");
         clip.setAttribute("id", clipId);
+
         const clipShape = makeSVG("path");
         clipShape.setAttribute("d", wedgePath(R_OUTER, R_INNER, a1, a2));
         clip.appendChild(clipShape);
@@ -579,7 +580,7 @@
         const sliceGroup = makeSVG("g");
         sliceGroup.setAttribute("data-index", String(i));
 
-        // Base wedge: empty is white+outline, filled is cheese gradient
+        // Base wedge
         const base = makeSVG("path");
         base.setAttribute("d", wedgePath(R_OUTER, R_INNER, a1, a2));
         base.setAttribute("fill", states[i] ? "url(#cheeseGradient)" : "white");
@@ -591,11 +592,10 @@
 
         // Toppings (clipped)
         const toppings = buildToppingsForSlice(i, clipId, states[i]);
-        // overwrite sauceTint path now that we have angles
         toppings.sauceTint.setAttribute("d", wedgePath(R_OUTER, R_INNER, a1, a2));
         sliceGroup.appendChild(toppings.group);
 
-        // Hit target (big tap area)
+        // Tap target
         const hit = makeSVG("path");
         hit.setAttribute("d", wedgePath(R_OUTER, R_INNER, a1, a2));
         hit.setAttribute("class", "slice-hit");
@@ -607,14 +607,13 @@
           states[i] = !states[i];
           saveSliceStates(states);
           updateCountDisplay();
-          render(); // simple redraw keeps everything clean and correctly clipped
+          render();
           checkCompletion();
         };
 
         hit.addEventListener("click", toggle);
         hit.addEventListener("touchstart", (e) => {
-          // iPad: prevent double-trigger and scroll
-          e.preventDefault();
+          e.preventDefault(); // avoid double trigger
           toggle();
         }, { passive: false });
 
@@ -628,7 +627,7 @@
         sliceGroup.appendChild(hit);
         slicesLayer.appendChild(sliceGroup);
 
-        // Divider lines (draw over the slices)
+        // Divider line
         const { pOuter, pInner } = dividerLine(a1);
         const line = makeSVG("line");
         line.setAttribute("x1", pInner.x);
@@ -641,8 +640,8 @@
         dividersLayer.appendChild(line);
       }
 
-      // last divider
-      const lastA = startOffset + NUM_SLICES * step;
+      // Last divider
+      const lastA = START_OFFSET + NUM_SLICES * STEP;
       const { pOuter, pInner } = dividerLine(lastA);
       const lastLine = makeSVG("line");
       lastLine.setAttribute("x1", pInner.x);
@@ -665,8 +664,7 @@
     }
 
     function checkCompletion() {
-      const allFilled = states.every(Boolean);
-      if (allFilled) showCompletionModal();
+      if (states.every(Boolean)) showCompletionModal();
     }
 
     function showCompletionModal() {
@@ -700,7 +698,6 @@
     btnResetModal.addEventListener("click", resetPizza);
 
     function triggerConfetti() {
-      // Clear existing
       document.querySelectorAll(".confetti").forEach(el => el.remove());
 
       const colors = ["#ff6b6b", "#51cf66", "#4c6ef5", "#ffd43b", "#ff922b"];
@@ -711,7 +708,7 @@
           const c = document.createElement("div");
           c.className = "confetti";
           c.textContent = Math.random() > 0.5 ? "🎉" : "🎊";
-          c.style.left = Math.random() * window.innerWidth + "px";
+          c.style.left = (Math.random() * window.innerWidth) + "px";
           c.style.top = "-12px";
           c.style.color = colors[Math.floor(Math.random() * colors.length)];
           c.style.fontSize = (Math.random() * 18 + 18) + "px";
@@ -730,7 +727,6 @@
     // ===========================
     updateCountDisplay();
     render();
-    // If already complete from previous state, show modal
     checkCompletion();
   </script>
 </body>
