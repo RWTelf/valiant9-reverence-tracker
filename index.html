@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Reverence Party Progress">
+    <title>Reverence Party Progress – Valiant 9</title>
+    <style>
+        * {
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            user-select: none;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        h1 {
+            color: white;
+            font-size: 28px;
+            font-weight: 700;
+            margin: 0;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        .pizza-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            filter: drop-shadow(0 10px 25px rgba(0, 0, 0, 0.3));
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .slice {
+            cursor: pointer;
+            transition: opacity 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .slice:active {
+            opacity: 0.85;
+        }
+
+        .counter {
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 14px 28px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            -webkit-appearance: none;
+            appearance: none;
+            min-width: 120px;
+        }
+
+        #btnReset {
+            background-color: #ff6b6b;
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        #btnReset:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+        }
+
+        #btnFill {
+            background-color: #51cf66;
+            color: white;
+            box-shadow: 0 4px 15px rgba(81, 207, 102, 0.3);
+        }
+
+        #btnFill:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 8px rgba(81, 207, 102, 0.3);
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 40px 30px;
+            text-align: center;
+            max-width: 400px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.4s ease;
+            position: relative;
+            z-index: 1001;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-content h2 {
+            font-size: 36px;
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+
+        .modal-content .celebration-text {
+            font-size: 24px;
+            margin: 20px 0;
+            color: #555;
+        }
+
+        .modal-content .button-group {
+            margin-top: 30px;
+        }
+
+        .modal-content button {
+            min-width: 140px;
+        }
+
+        #btnClose {
+            background-color: #4c6ef5;
+            color: white;
+            box-shadow: 0 4px 15px rgba(76, 110, 245, 0.3);
+        }
+
+        #btnClose:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 8px rgba(76, 110, 245, 0.3);
+        }
+
+        #btnResetModal {
+            background-color: #ff6b6b;
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        #btnResetModal:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+        }
+
+        /* Confetti Animation */
+        .confetti {
+            position: fixed;
+            pointer-events: none;
+            z-index: 1002;
+        }
+
+        @keyframes confettiFall {
+            to {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎉 Reverence Party Progress<br>Valiant 9</h1>
+        
+        <div class="pizza-container">
+            <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <!-- Gradients for filled slices -->
+                    <radialGradient id="cheeseGradient" cx="40%" cy="40%">
+                        <stop offset="0%" style="stop-color:#f4d03f;stop-opacity:1" />
+                        <stop offset="70%" style="stop-color:#f39c12;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#d68910;stop-opacity:1" />
+                    </radialGradient>
+
+                    <linearGradient id="crustGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#d4a574;stop-opacity:1" />
+                        <stop offset="50%" style="stop-color:#c19a6b;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#a0826d;stop-opacity:1" />
+                    </linearGradient>
+
+                    <linearGradient id="sauceGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#e74c3c;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#c0392b;stop-opacity:1" />
+                    </linearGradient>
+
+                    <!-- Clip paths for each slice -->
+                    <clipPath id="slice0">
+                        <polygon points="100,100 100,10 190,55" />
+                    </clipPath>
+                    <clipPath id="slice1">
+                        <polygon points="100,100 190,55 190,145" />
+                    </clipPath>
+                    <clipPath id="slice2">
+                        <polygon points="100,100 190,145 145,190" />
+                    </clipPath>
+                    <clipPath id="slice3">
+                        <polygon points="100,100 145,190 55,190" />
+                    </clipPath>
+                    <clipPath id="slice4">
+                        <polygon points="100,100 55,190 10,145" />
+                    </clipPath>
+                    <clipPath id="slice5">
+                        <polygon points="100,100 10,145 10,55" />
+                    </clipPath>
+                    <clipPath id="slice6">
+                        <polygon points="100,100 10,55 55,10" />
+                    </clipPath>
+                    <clipPath id="slice7">
+                        <polygon points="100,100 55,10 100,10" />
+                    </clipPath>
+                    <clipPath id="slice8">
+                        <polygon points="100,100 100,10 145,30" />
+                    </clipPath>
+                    <clipPath id="slice9">
+                        <polygon points="100,100 145,30 180,80" />
+                    </clipPath>
+                </defs>
+
+                <!-- Background circle (crust/table) -->
+                <circle cx="100" cy="100" r="95" fill="#8B7355" stroke="none"/>
+
+                <!-- Slice 0 (Pepperoni) -->
+                <g class="slice" data-index="0" clip-path="url(#slice0)">
+                    <!-- Empty state (B&W) -->
+                    <g class="empty-state">
+                        <polygon points="100,100 100,10 190,55" fill="white" stroke="black" stroke-width="1.5"/>
+                        <circle cx="130" cy="50" r="4" fill="none" stroke="black" stroke-width="0.8"/>
+                        <circle cx="155" cy="65" r="3.5" fill="none" stroke="black" stroke-width="0.8"/>
+                        <circle cx="140" cy="75" r="3" fill="none" stroke="black" stroke-width="0.8"/>
+                    </g>
+                    <!-- Filled state -->
+                    <g class="filled-state" style="display:none;">
+                        <polygon points="100,100 100,10 190,55" fill="url(#cheeseGradient)" stroke="none"/>
+                        <polygon points="100,100 100,10 190,55" fill="url(#sauceGradient)" opacity="0.3" stroke="none"/>
+                        <circle cx="130" cy="50" r="4" fill="#c0392b"/>
+                        <circle cx="155" cy="65" r="3.5" fill="#c0392b"/>
+                        <circle cx="140" cy="75" r="3" fill="#c0392b"/>
+                    </g>
+                </g>
+
+                <!-- Slice 1 (Olives) -->
+                <g class="slice" data-index="1" clip-path="url(#slice1)">
+                    <g class="empty-state">
+                        <polygon points="100,100 190,55 190,145" fill="white" stroke="black" stroke-width="1.5"/>
+                        <circle cx="160" cy="70" r="3.5" fill="black" stroke="black" stroke-width="0.5"/>
+                        <circle cx="175" cy="100" r="3" fill="black" stroke="black" stroke-width="0.5"/>
+                        <circle cx="155" cy="125" r="3.5" fill="black" stroke="black" stroke-width="0.5"/>
+                    </g>
+                    <g class="filled-state" style="display:none;">
+                        <polygon points="100,100 190,55 190,145" fill="url(#cheeseGradient)" stroke="none"/>
+                        <polygon points="100,100 190,55 190,145" fill="url(#sauceGradient)" opacity="0.25" stroke="none"/>
+                        <circle cx="160" cy="70" r="3.5" fill="#1a1a1a"/>
+                        <circle cx="175" cy="100" r="3" fill="#1a1a1a"/>
+                        <circle cx="155" cy="125" r="3.5" fill="#1a1a1a"/>
+                    </g>
+                </g>
+
+                <!-- Slice 2 (Peppers) -->
+                <g class="slice" data-index="2" clip-path="url(#slice2)">
+                    <g class="empty-state">
+                        <polygon points="100,100 190,145 145,190" fill="white" stroke="black" stroke-width="1.5"/>
+                        <polygon points="160,135 175,140 165,155" fill="none" stroke="black" stroke-width="0.8"/>
+                        <polygon points="140,165 155,160 160,180" fill="none" stroke="black" stroke-width="0.8"/>
+                    </g>
+                    <g class="filled-state" style="display:none;">
+                        <polygon points="100,100 190,145 145,190" fill="url(#cheeseGradient)" stroke="none"/>
+                        <polygon points="100,100 190,145 145,190" fill="url(#sauceGradient)" opacity="0.25" stroke="none"/>
+                        <polygon points="160,135 175,140 165,155" fill="#27ae60"/>
+                        <polygon points="140,165 155,160 160,180" fill="#27ae60"/>
+                    </g>
+                </g>
+
+                <!-- Slice 3 (Mushrooms) -->
+                <g class="slice" data-index="3" clip-path="url(#slice3)">
+                    <g class="empty-state">
+                        <polygon points="100,100 145,190 55,190" fill="white" stroke="black" stroke-width="1.5"/>
+                        <ellipse cx="75" cy="170" rx="5" ry="6" fill="none" stroke="black" stroke-width="0.8"/>
+                        <ellipse cx="120" cy="175" rx="5" ry="6" fill="none" stroke="black" stroke-width="0.8"/>
+                    </g>
+                    <g class="filled-state" style="display:none;">
+                        <polygon points="100,100 145,190 55,190" fill="url(#cheeseGradient)" stroke="none"/>
+                        <polygon points="100,100 145,190 55,190" fill="url(#sauceGradient)" opacity="0.25" stroke="none"/>
+                        <ellipse cx="75" cy="170" rx="5" ry="6" fill="#8B6F47"/>
+                        <ellipse cx="120" cy="175" rx="5" ry="6" fill="#8B6F47"/>
+                    </g>
+                </g>
+
+                <!-- Slice 4 (Pepperoni) -->
+                <g class="slice" data-index="4" clip-path="url(#slice4)">
+                    <g class="empty-state">
+                        <polygon points="100,100 55,190 10,145" fill="white" stroke="black" stroke-width="1.5"/>
+                        <circle cx="35" cy="165" r="4" fill="none" stroke="black" stroke-width="0.8"/>
+                        <circle cx="50" cy="145" r="3.5" fill="none" stroke="black" stroke-width="0.8"/>
+                    </g>
+                    <g class="filled-state" style="display:none;">
+                        <polygon points="100,100 55,190 10,145" fill="url(#cheeseGradient)" stroke="none"/>
+                        <polygon points="100,100 55,190 10,145" fill="url(#sauceGradient)" opacity="0.3" stroke="none"/>
+                        <circle cx="35" cy="165" r="4" fill="#c0392b"/>
+                        <circle cx="50" cy="145" r="3.5" fill="#c0392b"/>
+                    </g>
+                </g>
+
+                <!-- Slice 5 (Olives) -->
+                <g class="slice" data-index="5" clip-path="url(#slice5)">
+                    <g class="empty-state">
+                        <polygon points="100,100 10,145 10,55" fill="white" stroke="black" stroke-width="1.5"/>
+                        <circle cx="25" cy="100" r="3.5" fill="black" stroke="black" stroke-width="0.5"/>
+                        <circle cx="40" cy="75" r="3" fill="black" stroke="black" stroke-width="0.5"/>
+                        <circle cx="30" cy="130" r="3.5" fill="black" stroke="black" stroke-width="0.5"/>
+                    </g>
+                    <g class="filled-state" style="display:none;">
+                        <polygon points="100,100 10,145 10,55" fill="url(#cheeseGradient)" stroke="none"/>
+                        <polygon points="100,100 10,145 10,55" fill="url(#sauceGradient)" opacity="0.25" stroke="none"/>
+                        <circle cx="25" cy="100" r="3.5" fill="#1a1a1a"/>
+                        <circle cx="40" cy="75" r="3" fill="#1a1a1a"/>
+                        <circle cx="30" cy="130" r="3.5" fill="#1a1a1a"/>
+                    </g>
+                </g>
+
+                <!-- Slice 6 (Peppers) -->
+                <g class="slice" data-index="6" clip-path="url(#slice6)">
+                    <g class="empty-state">
+                        <polygon points="100,100 10,55 55,10" fill="white" stroke="black" stroke-width="1.5"/>
+                        <polygon points="30,40 45,35 40,55" fill="none" stroke="black" stroke-width="0.8"/>
+                        <polygon points="65,25 75,30 70,45" fill="none" stroke="black" stroke-width="0.8"/>
+                    </g>
+                    <g class="filled-state" style="display:none;">
+                        <polygon points="100,100 10,55 55,10" fill="url(#cheeseGradient)" stroke="none"/>
+                        <polygon points="100,100 10,55 55,10" fill="url(#sauceGradient)" opacity="0.25" stroke="none"/>
+                        <polygon points="30,40 45,35 40,55" fill="#27ae60"/>
+                        <polygon points="65,25 75,30 70,45" fill="#27ae60"/>
+                    </g>
+                </g>
+
+                <!-- Slice 7 (Mushrooms) -->
+                <g class="slice" data-index="7" clip-path="url(#slice7)">
+                    <g class="empty-state">
+                        <polygon points="100,100 55,10 100,10" fill="white" stroke="black" stroke-width="1.5"/>
+                        <ellipse cx="70" cy="20" rx="5" ry="6" fill="none" stroke="black" stroke-width="0.8"/>
+                        <ellipse cx="100" cy="25" rx="4" ry="5" fill="none" stroke="black" stroke-width="0.8"/>
+                    </g>
+                    <g class="filled-state" style="display:none;">
+                        <polygon points="100,100 55,10 100,10" fill="url(#cheeseGradient)" stroke="none"/>
+                        <polygon points="100,100 55,10 100,10" fill="url(#sauceGradient)" opacity="0.25" stroke="none"/>
+                        <ellipse cx="70" cy="20" rx="5" ry="6" fill="#8B6F47"/>
+                        <ellipse cx="100" cy="25" rx="4" ry="5" fill="#8B6F47"/>
+                    </g>
+                </g>
+
+                <!-- Slice 8 (Pepperoni) -->
+                <g class="slice" data-index="8" clip-path="url(#slice8)">
+                    <g class="empty-state">
+                        <polygon points="100,100 100,10 145,30" fill="white" stroke="black" stroke-width="1.5"/>
+                        <circle cx="115" cy="35" r="3" fill="none" stroke="black" stroke-width="0.8"/>
+                        <circle cx="135" cy="45" r="3.5" fill="none" stroke="black" stroke-width="0.8"/>
+                    </g>
+                    <g class="filled-state" style="display:none;">
+                        <polygon points="100,100 100,10 145,30" fill="url(#cheeseGradient)" stroke="none"/>
+                        <polygon points="100,100 100,10 145,30" fill="url(#sauceGradient)" opacity="0.3" stroke="none"/>
+                        <circle cx="115" cy="35" r="3" fill="#c0392b"/>
+                        <circle cx="135" cy="45" r="3.5" fill="#c0392b"/>
+                    </g>
+                </g>
+
+                <!-- Slice 9 (Olives & Peppers) -->
+                <g class="slice" data-index="9" clip-path="url(#slice9)">
+                    <g class="empty-state">
+                        <polygon points="100,100 145,30 180,80" fill="white" stroke="black" stroke-width="1.5"/>
+                        <circle cx="155" cy="45" r="3" fill="black" stroke="black" stroke-width="0.5"/>
+                        <polygon points="165,65 175,70 170,80" fill="none" stroke="black" stroke-width="0.8"/>
+                    </g>
+                    <g class="filled-state" style="display:none;">
+                        <polygon points="100,100 145,30 180,80" fill="url(#cheeseGradient)" stroke="none"/>
+                        <polygon points="100,100 145,30 180,80" fill="url(#sauceGradient)" opacity="0.25" stroke="none"/>
+                        <circle cx="155" cy="45" r="3" fill="#1a1a1a"/>
+                        <polygon points="165,65 175,70 170,80" fill="#27ae60"/>
+                    </g>
+                </g>
+            </svg>
+        </div>
+
+        <div class="counter">
+            <span id="filledCount">0</span> / 10 slices
+        </div>
+
+        <div class="button-group">
+            <button id="btnReset">Reset</button>
+            <button id="btnFill">Fill All</button>
+        </div>
+    </div>
+
+    <!-- Completion Modal -->
+    <div class="modal-overlay" id="completionModal">
+        <div class="modal-content">
+            <h2>🎉 Party time,<br>Valiant 9!</h2>
+            <div class="celebration-text">🍕 All slices colored!</div>
+            <div class="button-group">
+                <button id="btnClose">Close</button>
+                <button id="btnResetModal">Reset for next time</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===========================
+        // Constants & State
+        // ===========================
+        const NUM_SLICES = 10;
+        const STORAGE_KEY = 'pizzaSliceStates';
+
+        // ===========================
+        // DOM Elements
+        // ===========================
+        const sliceElements = document.querySelectorAll('.slice');
+        const filledCountSpan = document.getElementById('filledCount');
+        const btnReset = document.getElementById('btnReset');
+        const btnFill = document.getElementById('btnFill');
+        const btnClose = document.getElementById('btnClose');
+        const btnResetModal = document.getElementById('btnResetModal');
+        const completionModal = document.getElementById('completionModal');
+
+        // ===========================
+        // LocalStorage Functions
+        // ===========================
+        function loadSliceStates() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                try {
+                    return JSON.parse(stored);
+                } catch (e) {
+                    console.error('Failed to parse stored states:', e);
+                    return Array(NUM_SLICES).fill(false);
+                }
+            }
+            return Array(NUM_SLICES).fill(false);
+        }
+
+        function saveSliceStates(states) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(states));
+        }
+
+        function getSliceState(index) {
+            const states = loadSliceStates();
+            return states[index] || false;
+        }
+
+        function setSliceState(index, filled) {
+            const states = loadSliceStates();
+            states[index] = filled;
+            saveSliceStates(states);
+        }
+
+        // ===========================
+        // UI Update Functions
+        // ===========================
+        function updateSliceVisual(sliceElement, isFilled) {
+            const emptyState = sliceElement.querySelector('.empty-state');
+            const filledState = sliceElement.querySelector('.filled-state');
+
+            if (isFilled) {
+                emptyState.style.display = 'none';
+                filledState.style.display = 'block';
+            } else {
+                emptyState.style.display = 'block';
+                filledState.style.display = 'none';
+            }
+        }
+
+        function updateCountDisplay() {
+            const states = loadSliceStates();
+            const filledCount = states.filter(state => state).length;
+            filledCountSpan.textContent = filledCount;
+            return filledCount;
+        }
+
+        function toggleSlice(index) {
+            const currentState = getSliceState(index);
+            const newState = !currentState;
+            setSliceState(index, newState);
+            updateSliceVisual(sliceElements[index], newState);
+            updateCountDisplay();
+            checkCompletion();
+        }
+
+        // ===========================
+        // Button Handlers
+        // ===========================
+        btnReset.addEventListener('click', resetPizza);
+        btnFill.addEventListener('click', fillAllSlices);
+        btnClose.addEventListener('click', closeModal);
+        btnResetModal.addEventListener('click', resetAndCloseModal);
+
+        function resetPizza() {
+            const newStates = Array(NUM_SLICES).fill(false);
+            saveSliceStates(newStates);
+            sliceElements.forEach((element, index) => {
+                updateSliceVisual(element, false);
+            });
+            updateCountDisplay();
+            completionModal.classList.remove('show');
+        }
+
+        function fillAllSlices() {
+            const newStates = Array(NUM_SLICES).fill(true);
+            saveSliceStates(newStates);
+            sliceElements.forEach((element, index) => {
+                updateSliceVisual(element, true);
+            });
+            updateCountDisplay();
+            checkCompletion();
+        }
+
+        function closeModal() {
+            completionModal.classList.remove('show');
+        }
+
+        function resetAndCloseModal() {
+            resetPizza();
+        }
+
+        // ===========================
+        // Completion Logic
+        // ===========================
+        function checkCompletion() {
+            const states = loadSliceStates();
+            const allFilled = states.every(state => state);
+            if (allFilled) {
+                showCompletionModal();
+            }
+        }
+
+        function showCompletionModal() {
+            completionModal.classList.add('show');
+            triggerConfetti();
+        }
+
+        // ===========================
+        // Confetti Animation
+        // ===========================
+        function triggerConfetti() {
+            // Clear any existing confetti
+            const existingConfetti = document.querySelectorAll('.confetti');
+            existingConfetti.forEach(el => el.remove());
+
+            const colors = ['#ff6b6b', '#51cf66', '#4c6ef5', '#ffd43b', '#ff922b'];
+            const confettiPieces = 50;
+
+            for (let i = 0; i < confettiPieces; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.innerHTML = Math.random() > 0.5 ? '🎉' : '🎊';
+                    confetti.style.left = Math.random() * window.innerWidth + 'px';
+                    confetti.style.top = '-10px';
+                    confetti.style.color = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.fontSize = Math.random() * 20 + 20 + 'px';
+                    confetti.style.opacity = '1';
+                    confetti.style.animation = `confettiFall ${Math.random() * 2 + 2.5}s ease-out forwards`;
+                    confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+
+                    document.body.appendChild(confetti);
+
+                    setTimeout(() => confetti.remove(), 3500);
+                }, i * 30);
+            }
+        }
+
+        // ===========================
+        // Event Listeners for Slices
+        // ===========================
+        sliceElements.forEach((sliceElement, index) => {
+            sliceElement.addEventListener('click', () => {
+                toggleSlice(index);
+            });
+
+            // Also handle touch events for better iPad support
+            sliceElement.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                toggleSlice(index);
+            }, { passive: false });
+        });
+
+        // ===========================
+        // Initialization
+        // ===========================
+        function initializePizza() {
+            const states = loadSliceStates();
+            sliceElements.forEach((element, index) => {
+                updateSliceVisual(element, states[index]);
+            });
+            updateCountDisplay();
+        }
+
+        // Initialize on page load
+        initializePizza();
+    </script>
+</body>
+</html>
