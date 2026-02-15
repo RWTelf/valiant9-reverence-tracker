@@ -12,7 +12,7 @@
     * { -webkit-user-select:none; -webkit-touch-callout:none; user-select:none; box-sizing:border-box; }
 
     html, body {
-      width: 100%; height: 100%; margin: 0; padding: 0;
+      width:100%; height:100%; margin:0; padding:0;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
       display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -38,7 +38,8 @@
     svg { width:100%; height:100%; display:block; touch-action:manipulation; }
 
     .slice-hit {
-      cursor:pointer; -webkit-tap-highlight-color:transparent;
+      cursor:pointer;
+      -webkit-tap-highlight-color:transparent;
       pointer-events:all;
       fill: rgba(0,0,0,0.001);
       stroke: rgba(0,0,0,0.001);
@@ -96,9 +97,7 @@
     #btnResetModal:active { transform:scale(0.97); box-shadow:0 2px 8px rgba(255,107,107,0.3); }
 
     .confetti { position:fixed; pointer-events:none; z-index:1002; }
-    @keyframes confettiFall {
-      to { transform: translateY(100vh) rotate(720deg); opacity:0; }
-    }
+    @keyframes confettiFall { to { transform: translateY(100vh) rotate(720deg); opacity:0; } }
   </style>
 </head>
 
@@ -142,6 +141,9 @@
           <circle cx="100" cy="100" r="84" fill="url(#sauceGradient)"></circle>
         </g>
 
+        <!-- NEW: unified coloring-page underlay -->
+        <g id="underlayLayer"></g>
+
         <g id="slicesLayer"></g>
         <g id="dividersLayer"></g>
 
@@ -174,15 +176,20 @@
     // Constants & State
     // ===========================
     const NUM_SLICES = 10;
-    const STORAGE_KEY = "pizzaSliceStates_v4";
+    const STORAGE_KEY = "pizzaSliceStates_v5";
 
     // SVG geometry
     const CX = 100, CY = 100;
-    const R_OUTER = 84; // cheese edge
-    const R_INNER = 12; // hub to avoid sharp point
+    const R_OUTER = 84; // cheese edge (outer)
+    const R_INNER = 12; // hub
 
-    const START_OFFSET = -Math.PI / 2;          // slice 0 at top
+    const START_OFFSET = -Math.PI / 2;
     const STEP = (2 * Math.PI) / NUM_SLICES;
+
+    // Underlay geometry (for unified coloring page look)
+    const R_CRUST_OUT = 95;
+    const R_CRUST_IN  = 84;
+    const R_CHEESE_WAVY = 78;
 
     // DOM
     const filledCountSpan = document.getElementById("filledCount");
@@ -193,6 +200,7 @@
     const completionModal = document.getElementById("completionModal");
 
     const dynDefs = document.getElementById("dynDefs");
+    const underlayLayer = document.getElementById("underlayLayer");
     const slicesLayer = document.getElementById("slicesLayer");
     const dividersLayer = document.getElementById("dividersLayer");
 
@@ -241,7 +249,7 @@
       return { pOuter, pInner };
     }
 
-    // Deterministic RNG per slice (stable positions)
+    // Deterministic RNG per slice
     function mulberry32(seed) {
       return function() {
         let t = seed += 0x6D2B79F5;
@@ -252,7 +260,67 @@
     }
 
     // ===========================
-    // Clean, simple topping shapes (like your reference image)
+    // Unified underlay (coloring page outline)
+    // ===========================
+    function buildWavyCheeseEdgePath(r, bumps) {
+      // Simple "wavy circle" using quadratic curves
+      const pts = [];
+      const total = bumps * 2;
+      for (let i = 0; i <= total; i++) {
+        const t = (i / total) * (Math.PI * 2);
+        const wobble = (i % 2 === 0) ? 3.8 : -3.2; // alternating in/out
+        const rr = r + wobble;
+        pts.push(polarToXY(CX, CY, rr, t));
+      }
+
+      let d = `M ${pts[0].x} ${pts[0].y}`;
+      for (let i = 1; i < pts.length; i++) {
+        const prev = pts[i - 1];
+        const cur  = pts[i];
+        const midX = (prev.x + cur.x) / 2;
+        const midY = (prev.y + cur.y) / 2;
+        d += ` Q ${prev.x} ${prev.y} ${midX} ${midY}`;
+      }
+      d += " Z";
+      return d;
+    }
+
+    function drawUnderlay() {
+      underlayLayer.textContent = "";
+
+      // Outer crust ring outline (like reference image)
+      const crustOuter = makeSVG("circle");
+      crustOuter.setAttribute("cx", CX);
+      crustOuter.setAttribute("cy", CY);
+      crustOuter.setAttribute("r", R_CRUST_OUT);
+      crustOuter.setAttribute("fill", "none");
+      crustOuter.setAttribute("stroke", "#111");
+      crustOuter.setAttribute("stroke-width", "1.6");
+      crustOuter.setAttribute("opacity", "0.95");
+      underlayLayer.appendChild(crustOuter);
+
+      const crustInner = makeSVG("circle");
+      crustInner.setAttribute("cx", CX);
+      crustInner.setAttribute("cy", CY);
+      crustInner.setAttribute("r", R_CRUST_IN);
+      crustInner.setAttribute("fill", "none");
+      crustInner.setAttribute("stroke", "#111");
+      crustInner.setAttribute("stroke-width", "1.4");
+      crustInner.setAttribute("opacity", "0.85");
+      underlayLayer.appendChild(crustInner);
+
+      // Wavy cheese boundary
+      const cheeseEdge = makeSVG("path");
+      cheeseEdge.setAttribute("d", buildWavyCheeseEdgePath(R_CHEESE_WAVY, 10));
+      cheeseEdge.setAttribute("fill", "none");
+      cheeseEdge.setAttribute("stroke", "#111");
+      cheeseEdge.setAttribute("stroke-width", "1.4");
+      cheeseEdge.setAttribute("opacity", "0.85");
+      underlayLayer.appendChild(cheeseEdge);
+    }
+
+    // ===========================
+    // Clean topping shapes (pepperoni, mushroom, chunk)
     // ===========================
     function drawPepperoniOutline(g, x, y, r) {
       const c = makeSVG("circle");
@@ -264,10 +332,12 @@
       c1.setAttribute("cx", x); c1.setAttribute("cy", y); c1.setAttribute("r", r);
       c1.setAttribute("fill", "#b91c1c");
       c1.setAttribute("opacity", "0.95");
+
       const c2 = makeSVG("circle");
-      c2.setAttribute("cx", x); c2.setAttribute("cy", y); c2.setAttribute("r", r*0.62);
+      c2.setAttribute("cx", x); c2.setAttribute("cy", y); c2.setAttribute("r", r * 0.62);
       c2.setAttribute("fill", "#7f1d1d");
       c2.setAttribute("opacity", "0.25");
+
       g.appendChild(c1); g.appendChild(c2);
     }
 
@@ -282,14 +352,15 @@
       const cap = makeSVG("path");
       cap.setAttribute("d", `M ${x - s} ${y} Q ${x} ${y - s*0.95} ${x + s} ${y} Q ${x} ${y + s*0.2} ${x - s} ${y} Z`);
       cap.setAttribute("fill", "#c7b299");
+
       const stem = makeSVG("path");
       stem.setAttribute("d", `M ${x - s*0.33} ${y} Q ${x} ${y + s*1.0} ${x + s*0.33} ${y} Z`);
       stem.setAttribute("fill", "#ead9c4");
+
       g.appendChild(cap); g.appendChild(stem);
     }
 
     function drawChunkOutline(g, x, y, s) {
-      // small rounded triangle-ish blob (like cheese chunk / onion chunk in coloring pages)
       const p = makeSVG("path");
       p.setAttribute("d", `M ${x} ${y-s}
         Q ${x+s} ${y-s*0.2} ${x+s*0.55} ${y+s*0.75}
@@ -309,29 +380,30 @@
     }
 
     // ===========================
-    // Placement with spacing (prevents overlap / clumps)
+    // Placement with spacing
     // ===========================
     function placeNonOverlappingPoints(rnd, sliceIndex, count, minDist) {
       const points = [];
       const a1 = START_OFFSET + sliceIndex * STEP;
       const a2 = START_OFFSET + (sliceIndex + 1) * STEP;
 
-      // keep inside wedge with margins
+      // Keep inside wedge with margins
       const angMin = a1 + 0.18 * STEP;
       const angMax = a2 - 0.18 * STEP;
+
+      // Keep inside cheese region (also respects wavy edge feel)
       const radMin = R_INNER + 18;
-      const radMax = R_OUTER - 18;
+      const radMax = R_CHEESE_WAVY - 10;
 
       let attempts = 0;
-      const maxAttempts = 350;
+      const maxAttempts = 420;
 
       while (points.length < count && attempts < maxAttempts) {
         attempts++;
 
-        // sample angle uniformly within wedge
         const ang = angMin + rnd() * (angMax - angMin);
 
-        // sample radius with sqrt distribution for more uniform area
+        // sqrt distribution for uniform area
         const t = rnd();
         const rad = Math.sqrt(t) * (radMax - radMin) + radMin;
 
@@ -345,7 +417,6 @@
         }
         if (ok) points.push({ x, y });
       }
-
       return points;
     }
 
@@ -364,39 +435,33 @@
       outlineG.setAttribute("fill", "none");
       outlineG.setAttribute("stroke", "#111");
       outlineG.setAttribute("stroke-width", "1.7");
-      outlineG.setAttribute("opacity", filled ? "0" : "0.85");
+      outlineG.setAttribute("opacity", filled ? "0" : "0.9");
 
       // Color group
       const colorG = makeSVG("g");
       colorG.setAttribute("opacity", filled ? "1" : "0");
 
       // Stable RNG per slice
-      const rnd = mulberry32(13579 + sliceIndex * 999);
+      const rnd = mulberry32(24680 + sliceIndex * 1009);
 
-      // 6–8 items per slice, spaced out
-      const itemCount = 6 + Math.floor(rnd() * 3);
-      const pts = placeNonOverlappingPoints(rnd, sliceIndex, itemCount, 14);
+      // Fewer items per slice = cleaner, more like reference
+      const itemCount = 4 + Math.floor(rnd() * 3); // 4–6
+      const pts = placeNonOverlappingPoints(rnd, sliceIndex, itemCount, 18);
 
-      // For each point, pick a simple topping type
       for (let i = 0; i < pts.length; i++) {
         const { x, y } = pts[i];
         const roll = rnd();
 
-        if (roll < 0.50) {
-          // Pepperoni
-          const r = 6 + rnd() * 2;
+        if (roll < 0.55) {
+          const r = 7 + rnd() * 1.5;
           drawPepperoniOutline(outlineG, x, y, r);
           if (filled) drawPepperoniColor(colorG, x, y, r);
-
-        } else if (roll < 0.78) {
-          // Mushroom
-          const s = 7 + rnd() * 2.5;
+        } else if (roll < 0.82) {
+          const s = 8 + rnd() * 2;
           drawMushroomOutline(outlineG, x, y, s);
           if (filled) drawMushroomColor(colorG, x, y, s);
-
         } else {
-          // Chunk blob (pepper/cheese chunk)
-          const s = 4.5 + rnd() * 2.0;
+          const s = 5 + rnd() * 2;
           drawChunkOutline(outlineG, x, y, s);
           if (filled) drawChunkColor(colorG, x, y, s);
         }
@@ -404,7 +469,6 @@
 
       outer.appendChild(colorG);
       outer.appendChild(outlineG);
-
       return { group: outer, sauceTint };
     }
 
@@ -415,6 +479,9 @@
       dynDefs.textContent = "";
       slicesLayer.textContent = "";
       dividersLayer.textContent = "";
+
+      // unified underlay (draw once per render)
+      drawUnderlay();
 
       for (let i = 0; i < NUM_SLICES; i++) {
         const a1 = START_OFFSET + i * STEP;
